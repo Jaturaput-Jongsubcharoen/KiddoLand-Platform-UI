@@ -199,17 +199,17 @@ Start the development server with hot reloading:
 
 **PowerShell:**
 ```powershell
-npm start
+npm dev
 ```
 
 **CMD:**
 ```cmd
-npm start
+npm dev
 ```
 
 **Git Bash:**
 ```bash
-npm start
+npm dev
 ```
 
 The application will automatically open at `http://localhost:3000`.
