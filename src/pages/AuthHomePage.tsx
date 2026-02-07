@@ -9,6 +9,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { KiddoButton, InfoTooltip, AuthLayout } from '../components';
+import { loginWithPassword, registerWithPassword } from '../utils/authApi';
 import {
   validateEmail,
   validatePassword,
@@ -23,12 +24,15 @@ export const AuthHomePage: React.FC = () => {
   const [signInEmail, setSignInEmail] = useState('');
   const [signInPassword, setSignInPassword] = useState('');
   const [signInError, setSignInError] = useState('');
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   const [signUpName, setSignUpName] = useState('');
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [signUpError, setSignUpError] = useState('');
+  const [isSigningUp, setIsSigningUp] = useState(false);
   const [signUpErrors, setSignUpErrors] = useState({
     name: '',
     email: '',
@@ -43,7 +47,7 @@ export const AuthHomePage: React.FC = () => {
     }
   }, [appState.selectedMode, setMode]);
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignInError('');
 
@@ -58,12 +62,28 @@ export const AuthHomePage: React.FC = () => {
       return;
     }
 
-    login(signInEmail);
-    navigate('/home');
+    try {
+      setIsSigningIn(true);
+      // Jaturaput Jongsubcharoen: wire login to backend auth.
+      const response = await loginWithPassword({
+        email: signInEmail,
+        password: signInPassword,
+        mode: 'home',
+      });
+      const tokenExpiresAt = Date.now() + response.expires_in * 1000;
+      login(signInEmail, response.access_token, response.role, tokenExpiresAt);
+      navigate('/home');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to sign in.';
+      setSignInError(message);
+    } finally {
+      setIsSigningIn(false);
+    }
   };
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSignUpError('');
     const errors = { name: '', email: '', password: '', confirmPassword: '', terms: '' };
 
     const nameValidation = validateName(signUpName);
@@ -84,8 +104,24 @@ export const AuthHomePage: React.FC = () => {
     setSignUpErrors(errors);
     if (Object.values(errors).some((err) => err !== '')) return;
 
-    login(signUpEmail);
-    navigate('/home');
+    try {
+      setIsSigningUp(true);
+      // Jaturaput Jongsubcharoen: wire registration to backend auth.
+      const response = await registerWithPassword({
+        email: signUpEmail,
+        password: signUpPassword,
+        mode: 'home',
+        role: 'Parent',
+      });
+      const tokenExpiresAt = Date.now() + response.expires_in * 1000;
+      login(signUpEmail, response.access_token, response.role, tokenExpiresAt);
+      navigate('/home');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to sign up.';
+      setSignUpError(message);
+    } finally {
+      setIsSigningUp(false);
+    }
   };
 
   const signInForm = (
@@ -112,8 +148,15 @@ export const AuthHomePage: React.FC = () => {
           onChange={(e) => setSignInPassword(e.target.value)}
           required
         />
-        <KiddoButton type="submit" variant="contained" fullWidth size="large" glow>
-          Sign In
+        <KiddoButton
+          type="submit"
+          variant="contained"
+          fullWidth
+          size="large"
+          glow
+          disabled={isSigningIn}
+        >
+          {isSigningIn ? 'Signing In...' : 'Sign In'}
         </KiddoButton>
       </Box>
     </form>
@@ -122,6 +165,11 @@ export const AuthHomePage: React.FC = () => {
   const signUpForm = (
     <form onSubmit={handleSignUp}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+        {signUpError && (
+          <Alert severity="error" sx={{ borderRadius: 3 }}>
+            {signUpError}
+          </Alert>
+        )}
         <TextField
           label="Parent/Guardian Full Name"
           fullWidth
@@ -193,8 +241,15 @@ export const AuthHomePage: React.FC = () => {
             </Box>
           )}
         </Box>
-        <KiddoButton type="submit" variant="contained" fullWidth size="large" glow>
-          Sign Up
+        <KiddoButton
+          type="submit"
+          variant="contained"
+          fullWidth
+          size="large"
+          glow
+          disabled={isSigningUp}
+        >
+          {isSigningUp ? 'Signing Up...' : 'Sign Up'}
         </KiddoButton>
       </Box>
     </form>
