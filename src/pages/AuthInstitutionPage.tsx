@@ -15,6 +15,7 @@ import {
   AuthLayout,
   BannerNotice,
 } from '../components';
+import { loginWithPassword } from '../utils/authApi';
 import {
   validateInstitutionEmail,
   validateName,
@@ -29,6 +30,7 @@ export const AuthInstitutionPage: React.FC = () => {
   const [signInEmail, setSignInEmail] = useState('');
   const [signInPassword, setSignInPassword] = useState('');
   const [signInError, setSignInError] = useState('');
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   const [requestName, setRequestName] = useState('');
   const [requestInstitution, setRequestInstitution] = useState('');
@@ -48,7 +50,7 @@ export const AuthInstitutionPage: React.FC = () => {
     }
   }, [appState.selectedMode, setMode]);
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignInError('');
 
@@ -63,8 +65,23 @@ export const AuthInstitutionPage: React.FC = () => {
       return;
     }
 
-    login(signInEmail);
-    navigate('/institution');
+    try {
+      setIsSigningIn(true);
+      // Jaturaput Jongsubcharoen: wire login to backend auth.
+      const response = await loginWithPassword({
+        email: signInEmail,
+        password: signInPassword,
+        mode: 'institution',
+      });
+      const tokenExpiresAt = Date.now() + response.expires_in * 1000;
+      login(signInEmail, response.access_token, response.role, tokenExpiresAt);
+      navigate('/institution');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to sign in.';
+      setSignInError(message);
+    } finally {
+      setIsSigningIn(false);
+    }
   };
 
   const handleRequestAccess = (e: React.FormEvent) => {
@@ -124,8 +141,16 @@ export const AuthInstitutionPage: React.FC = () => {
           onChange={(e) => setSignInPassword(e.target.value)}
           required
         />
-        <KiddoButton type="submit" variant="contained" color="secondary" fullWidth size="large" glow>
-          Sign In
+        <KiddoButton
+          type="submit"
+          variant="contained"
+          color="secondary"
+          fullWidth
+          size="large"
+          glow
+          disabled={isSigningIn}
+        >
+          {isSigningIn ? 'Signing In...' : 'Sign In'}
         </KiddoButton>
       </Box>
     </form>

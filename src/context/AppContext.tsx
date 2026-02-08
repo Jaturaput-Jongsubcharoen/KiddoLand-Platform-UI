@@ -6,12 +6,15 @@ interface AppState {
   selectedMode: AppMode;
   isAuthenticated: boolean;
   userEmail: string | null;
+  accessToken: string | null;
+  userRole: string | null;
+  tokenExpiresAt: number | null;
 }
 
 interface AppContextType {
   appState: AppState;
   setMode: (mode: AppMode) => void;
-  login: (email: string) => void;
+  login: (email: string, accessToken?: string, userRole?: string, tokenExpiresAt?: number) => void;
   logout: () => void;
 }
 
@@ -31,6 +34,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           selectedMode: null,
           isAuthenticated: false,
           userEmail: null,
+          accessToken: null,
+          userRole: null,
+          tokenExpiresAt: null,
         };
       }
     }
@@ -38,6 +44,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       selectedMode: null,
       isAuthenticated: false,
       userEmail: null,
+      accessToken: null,
+      userRole: null,
+      tokenExpiresAt: null,
     };
   });
 
@@ -53,14 +62,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // Reset auth when changing mode
       isAuthenticated: false,
       userEmail: null,
+      accessToken: null,
+      userRole: null,
+      tokenExpiresAt: null,
     }));
   };
 
-  const login = (email: string) => {
+  const login = (email: string, accessToken?: string, userRole?: string, tokenExpiresAt?: number) => {
     setAppState(prev => ({
       ...prev,
       isAuthenticated: true,
       userEmail: email,
+      accessToken: accessToken ?? null,
+      userRole: userRole ?? null,
+      tokenExpiresAt: tokenExpiresAt ?? null,
     }));
   };
 
@@ -69,6 +84,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       selectedMode: null,
       isAuthenticated: false,
       userEmail: null,
+      accessToken: null,
+      userRole: null,
+      tokenExpiresAt: null,
     });
   };
 
