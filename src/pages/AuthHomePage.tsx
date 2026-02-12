@@ -5,10 +5,13 @@ import {
   Checkbox,
   FormControlLabel,
   Alert,
+  IconButton,
+  InputAdornment,
 } from '@mui/material';
+import { Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { KiddoButton, InfoTooltip, AuthLayout } from '../components';
+import { KiddoButton, AuthLayout } from '../components';
 import { loginWithPassword, registerWithPassword } from '../utils/authApi';
 import {
   validateEmail,
@@ -25,6 +28,7 @@ export const AuthHomePage: React.FC = () => {
   const [signInPassword, setSignInPassword] = useState('');
   const [signInError, setSignInError] = useState('');
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [showSignInPassword, setShowSignInPassword] = useState(false);
 
   const [signUpName, setSignUpName] = useState('');
   const [signUpEmail, setSignUpEmail] = useState('');
@@ -33,6 +37,8 @@ export const AuthHomePage: React.FC = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [signUpError, setSignUpError] = useState('');
   const [isSigningUp, setIsSigningUp] = useState(false);
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [showSignUpConfirmPassword, setShowSignUpConfirmPassword] = useState(false);
   const [signUpErrors, setSignUpErrors] = useState({
     name: '',
     email: '',
@@ -142,11 +148,24 @@ export const AuthHomePage: React.FC = () => {
         />
         <TextField
           label="Password"
-          type="password"
+          type={showSignInPassword ? 'text' : 'password'}
           fullWidth
           value={signInPassword}
           onChange={(e) => setSignInPassword(e.target.value)}
           required
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowSignInPassword(!showSignInPassword)}
+                  edge="end"
+                  aria-label="toggle password visibility"
+                >
+                  {showSignInPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
         <KiddoButton
           type="submit"
@@ -180,16 +199,7 @@ export const AuthHomePage: React.FC = () => {
           required
         />
         <TextField
-          label={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              Email
-              <InfoTooltip
-                title="Used for account login and recovery."
-                placement="right"
-                ariaLabel="Email usage"
-              />
-            </Box>
-          }
+          label="Email"
           type="email"
           fullWidth
           value={signUpEmail}
@@ -200,7 +210,7 @@ export const AuthHomePage: React.FC = () => {
         />
         <TextField
           label="Password"
-          type="password"
+          type={showSignUpPassword ? 'text' : 'password'}
           fullWidth
           value={signUpPassword}
           onChange={(e) => setSignUpPassword(e.target.value)}
@@ -210,16 +220,42 @@ export const AuthHomePage: React.FC = () => {
             'Min 8 characters, at least 1 letter and 1 number'
           }
           required
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                  edge="end"
+                  aria-label="toggle password visibility"
+                >
+                  {showSignUpPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
         <TextField
           label="Confirm Password"
-          type="password"
+          type={showSignUpConfirmPassword ? 'text' : 'password'}
           fullWidth
           value={signUpConfirmPassword}
           onChange={(e) => setSignUpConfirmPassword(e.target.value)}
           error={!!signUpErrors.confirmPassword}
           helperText={signUpErrors.confirmPassword}
           required
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowSignUpConfirmPassword(!showSignUpConfirmPassword)}
+                  edge="end"
+                  aria-label="toggle confirm password visibility"
+                >
+                  {showSignUpConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
         <Box>
           <FormControlLabel

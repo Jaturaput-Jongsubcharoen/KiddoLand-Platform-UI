@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { KiddoCard } from '../KiddoCard';
 import { PageHeader } from '../ui/PageHeader';
 import { AppShellLayout } from '../AppShellLayout';
+import { LearningWorldScene } from '../LearningWorldScene';
 import { useApp } from '../../context/AppContext';
 
 interface AuthTab {
@@ -47,8 +48,24 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
 
   return (
     <AppShellLayout>
+      {/* Background Scene Layer - 50% opacity for professional look */}
       <Box
         sx={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 0,
+          opacity: 0.5,
+          pointerEvents: 'none',
+        }}
+      >
+        <LearningWorldScene />
+      </Box>
+
+      {/* Content Layer */}
+      <Box
+        sx={{
+          position: 'relative',
+          zIndex: 1,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -68,6 +85,9 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             maxWidth,
             width: '100%',
             p: 4,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(8px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
           }}
         >
           <PageHeader title={title} subtitle={subtitle} align="center" />

@@ -10,6 +10,7 @@ export { FormContainer } from './ui/FormContainer';
 export { CenteredContainer } from './ui/CenteredContainer';
 export { GridSection } from './ui/GridSection';
 export { KiddoModal } from './ui/KiddoModal';
+export { LearningWorldScene } from './LearningWorldScene';
 
 // Layout Components
 export { AppShellLayout } from './AppShellLayout';

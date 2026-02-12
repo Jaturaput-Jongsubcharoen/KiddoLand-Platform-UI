@@ -13,6 +13,7 @@ import {
   IconBadge,
   GridSection,
 } from '../components';
+import { LearningWorldScene } from '../components/LearningWorldScene';
 
 const actionTiles = [
   {
@@ -41,7 +42,22 @@ const recentItems = [
 export const HomeDashboardPage: React.FC = () => {
   return (
     <AppShellLayout>
-      <Stack spacing={4}>
+      {/* Background Scene Layer - 35% opacity for ambient feel */}
+      <Box
+        sx={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 0,
+          opacity: 0.35,
+          pointerEvents: 'none',
+        }}
+      >
+        <LearningWorldScene />
+      </Box>
+
+      {/* Content Layer */}
+      <Box sx={{ position: 'relative', zIndex: 1 }}>
+        <Stack spacing={4}>
         <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
           <Typography variant="h4" sx={{ mb: 1 }}>
             Welcome back
@@ -85,7 +101,8 @@ export const HomeDashboardPage: React.FC = () => {
             </KiddoCard>
           ))}
         </GridSection>
-      </Stack>
+        </Stack>
+      </Box>
     </AppShellLayout>
   );
 };

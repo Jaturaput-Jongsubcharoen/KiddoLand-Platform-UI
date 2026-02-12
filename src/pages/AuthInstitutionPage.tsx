@@ -5,20 +5,22 @@ import {
   Alert,
   MenuItem,
   Snackbar,
+  IconButton,
+  InputAdornment,
 } from '@mui/material';
-import { School } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import {
   KiddoButton,
-  InfoTooltip,
   AuthLayout,
-  BannerNotice,
 } from '../components';
 import { loginWithPassword } from '../utils/authApi';
 import {
   validateInstitutionEmail,
   validateName,
+  validatePassword,
+  validateConfirmPassword,
 } from '../utils/formValidators';
 import { useToggle } from '../hooks';
 
@@ -31,17 +33,23 @@ export const AuthInstitutionPage: React.FC = () => {
   const [signInPassword, setSignInPassword] = useState('');
   const [signInError, setSignInError] = useState('');
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [showSignInPassword, setShowSignInPassword] = useState(false);
 
-  const [requestName, setRequestName] = useState('');
-  const [requestInstitution, setRequestInstitution] = useState('');
-  const [requestEmail, setRequestEmail] = useState('');
-  const [requestRole, setRequestRole] = useState('');
-  const [requestNote, setRequestNote] = useState('');
-  const [requestErrors, setRequestErrors] = useState({
+  const [signUpName, setSignUpName] = useState('');
+  const [signUpInstitution, setSignUpInstitution] = useState('');
+  const [signUpEmail, setSignUpEmail] = useState('');
+  const [signUpRole, setSignUpRole] = useState('');
+  const [signUpPassword, setSignUpPassword] = useState('');
+  const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [showSignUpConfirmPassword, setShowSignUpConfirmPassword] = useState(false);
+  const [signUpErrors, setSignUpErrors] = useState({
     name: '',
     institution: '',
     email: '',
     role: '',
+    password: '',
+    confirmPassword: '',
   });
 
   useEffect(() => {
@@ -84,28 +92,33 @@ export const AuthInstitutionPage: React.FC = () => {
     }
   };
 
-  const handleRequestAccess = (e: React.FormEvent) => {
+  const handleSignUp = (e: React.FormEvent) => {
     e.preventDefault();
-    const errors = { name: '', institution: '', email: '', role: '' };
+    const errors = { name: '', institution: '', email: '', role: '', password: '', confirmPassword: '' };
 
-    const nameValidation = validateName(requestName);
-    const institutionValidation = validateName(requestInstitution);
-    const emailValidation = validateInstitutionEmail(requestEmail);
+    const nameValidation = validateName(signUpName);
+    const institutionValidation = validateName(signUpInstitution);
+    const emailValidation = validateInstitutionEmail(signUpEmail);
+    const passwordValidation = validatePassword(signUpPassword);
+    const confirmPasswordValidation = validateConfirmPassword(signUpPassword, signUpConfirmPassword);
 
     if (!nameValidation.isValid) errors.name = nameValidation.error || '';
     if (!institutionValidation.isValid) errors.institution = 'Institution name is required';
     if (!emailValidation.isValid) errors.email = emailValidation.error || '';
-    if (!requestRole) errors.role = 'Please select a role';
+    if (!signUpRole) errors.role = 'Please select a role';
+    if (!passwordValidation.isValid) errors.password = passwordValidation.error || '';
+    if (!confirmPasswordValidation.isValid) errors.confirmPassword = confirmPasswordValidation.error || '';
 
-    setRequestErrors(errors);
+    setSignUpErrors(errors);
     if (Object.values(errors).some((err) => err !== '')) return;
 
     openSuccessSnackbar();
-    setRequestName('');
-    setRequestInstitution('');
-    setRequestEmail('');
-    setRequestRole('');
-    setRequestNote('');
+    setSignUpName('');
+    setSignUpInstitution('');
+    setSignUpEmail('');
+    setSignUpRole('');
+    setSignUpPassword('');
+    setSignUpConfirmPassword('');
   };
 
   const signInForm = (
@@ -117,16 +130,7 @@ export const AuthInstitutionPage: React.FC = () => {
           </Alert>
         )}
         <TextField
-          label={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              Work/Institution Email
-              <InfoTooltip
-                title="Must be an educational or organization email. Personal emails are not allowed."
-                placement="right"
-                ariaLabel="Institution email info"
-              />
-            </Box>
-          }
+          label="Work/Institution Email"
           type="email"
           fullWidth
           value={signInEmail}
@@ -135,11 +139,24 @@ export const AuthInstitutionPage: React.FC = () => {
         />
         <TextField
           label="Password"
-          type="password"
+          type={showSignInPassword ? 'text' : 'password'}
           fullWidth
           value={signInPassword}
           onChange={(e) => setSignInPassword(e.target.value)}
           required
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowSignInPassword(!showSignInPassword)}
+                  edge="end"
+                  aria-label="toggle password visibility"
+                >
+                  {showSignInPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
         <KiddoButton
           type="submit"
@@ -156,54 +173,45 @@ export const AuthInstitutionPage: React.FC = () => {
     </form>
   );
 
-  const requestAccessForm = (
-    <form onSubmit={handleRequestAccess}>
+  const signUpForm = (
+    <form onSubmit={handleSignUp}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         <TextField
           label="Full Name"
           fullWidth
-          value={requestName}
-          onChange={(e) => setRequestName(e.target.value)}
-          error={!!requestErrors.name}
-          helperText={requestErrors.name}
+          value={signUpName}
+          onChange={(e) => setSignUpName(e.target.value)}
+          error={!!signUpErrors.name}
+          helperText={signUpErrors.name}
           required
         />
         <TextField
           label="Institution Name"
           fullWidth
-          value={requestInstitution}
-          onChange={(e) => setRequestInstitution(e.target.value)}
-          error={!!requestErrors.institution}
-          helperText={requestErrors.institution}
+          value={signUpInstitution}
+          onChange={(e) => setSignUpInstitution(e.target.value)}
+          error={!!signUpErrors.institution}
+          helperText={signUpErrors.institution}
           required
         />
         <TextField
-          label={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              Institution Email
-              <InfoTooltip
-                title="Must be an approved school/library email domain."
-                placement="right"
-                ariaLabel="Institution email rules"
-              />
-            </Box>
-          }
+          label="Institution Email"
           type="email"
           fullWidth
-          value={requestEmail}
-          onChange={(e) => setRequestEmail(e.target.value)}
-          error={!!requestErrors.email}
-          helperText={requestErrors.email}
+          value={signUpEmail}
+          onChange={(e) => setSignUpEmail(e.target.value)}
+          error={!!signUpErrors.email}
+          helperText={signUpErrors.email}
           required
         />
         <TextField
           select
           label="Role"
           fullWidth
-          value={requestRole}
-          onChange={(e) => setRequestRole(e.target.value)}
-          error={!!requestErrors.role}
-          helperText={requestErrors.role}
+          value={signUpRole}
+          onChange={(e) => setSignUpRole(e.target.value)}
+          error={!!signUpErrors.role}
+          helperText={signUpErrors.role}
           required
         >
           <MenuItem value="teacher">Teacher</MenuItem>
@@ -211,26 +219,56 @@ export const AuthInstitutionPage: React.FC = () => {
           <MenuItem value="admin">Admin</MenuItem>
         </TextField>
         <TextField
-          label="Short Note (Optional)"
+          label="Password"
+          type={showSignUpPassword ? 'text' : 'password'}
           fullWidth
-          multiline
-          rows={3}
-          value={requestNote}
-          onChange={(e) => setRequestNote(e.target.value)}
+          value={signUpPassword}
+          onChange={(e) => setSignUpPassword(e.target.value)}
+          error={!!signUpErrors.password}
+          helperText={signUpErrors.password || 'Min 8 characters, at least 1 letter and 1 number'}
+          required
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                  edge="end"
+                  aria-label="toggle password visibility"
+                >
+                  {showSignUpPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+        <TextField
+          label="Confirm Password"
+          type={showSignUpConfirmPassword ? 'text' : 'password'}
+          fullWidth
+          value={signUpConfirmPassword}
+          onChange={(e) => setSignUpConfirmPassword(e.target.value)}
+          error={!!signUpErrors.confirmPassword}
+          helperText={signUpErrors.confirmPassword}
+          required
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowSignUpConfirmPassword(!showSignUpConfirmPassword)}
+                  edge="end"
+                  aria-label="toggle confirm password visibility"
+                >
+                  {showSignUpConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
         <KiddoButton type="submit" variant="contained" color="secondary" fullWidth size="large" glow>
-          Submit Request
+          Sign Up
         </KiddoButton>
       </Box>
     </form>
-  );
-
-  const banner = (
-    <BannerNotice
-      message="Institution Mode: Anonymous child sessions. No child personal info."
-      severity="info"
-      icon={<School size={24} />}
-    />
   );
 
   return (
@@ -238,10 +276,9 @@ export const AuthInstitutionPage: React.FC = () => {
       <AuthLayout
         title="Institution Mode"
         subtitle="Staff-only access for teachers and librarians"
-        banner={banner}
         tabs={[
           { label: 'Sign In', content: signInForm },
-          { label: 'Request Access', content: requestAccessForm },
+          { label: 'Sign Up', content: signUpForm },
         ]}
         maxWidth={560}
       />
@@ -253,7 +290,7 @@ export const AuthInstitutionPage: React.FC = () => {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert severity="success" sx={{ borderRadius: 3 }} onClose={closeSuccessSnackbar}>
-          Request submitted (demo).
+          Sign up successful! (demo)
         </Alert>
       </Snackbar>
     </>
