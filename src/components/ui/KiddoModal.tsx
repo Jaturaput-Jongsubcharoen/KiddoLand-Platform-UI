@@ -26,16 +26,25 @@ export const KiddoModal: React.FC<KiddoModalProps> = ({
         alignItems: 'center',
         justifyContent: 'center',
       }}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backdropFilter: 'blur(8px)',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          },
+        },
+      }}
     >
       <Paper
         sx={{
           maxWidth,
           p: 4,
-          borderRadius: 4,
+          borderRadius: 2,
           position: 'relative',
           mx: 2,
           maxHeight: '90vh',
           overflowY: 'auto',
+          boxShadow: '0 24px 48px rgba(0, 0, 0, 0.3)',
         }}
       >
         <IconButton

@@ -15,6 +15,7 @@ import {
   ActionTile,
   GridSection,
 } from '../components';
+import { LearningWorldScene } from '../components/LearningWorldScene';
 
 const quickActions = [
   { title: 'Generate for Class', icon: <Users /> },
@@ -25,7 +26,22 @@ const quickActions = [
 export const InstitutionDashboardPage: React.FC = () => {
   return (
     <AppShellLayout>
-      <Stack spacing={4}>
+      {/* Background Scene Layer - 35% opacity for ambient feel */}
+      <Box
+        sx={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 0,
+          opacity: 0.35,
+          pointerEvents: 'none',
+        }}
+      >
+        <LearningWorldScene />
+      </Box>
+
+      {/* Content Layer */}
+      <Box sx={{ position: 'relative', zIndex: 1 }}>
+        <Stack spacing={4}>
         <BannerNotice
           message="Institution Mode: Anonymous child sessions. No child personal info."
           severity="info"
@@ -66,7 +82,8 @@ export const InstitutionDashboardPage: React.FC = () => {
             />
           ))}
         </GridSection>
-      </Stack>
+        </Stack>
+      </Box>
     </AppShellLayout>
   );
 };

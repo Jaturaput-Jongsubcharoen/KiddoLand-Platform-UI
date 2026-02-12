@@ -16,7 +16,6 @@ import {
   Home,
   School,
   LogOut,
-  Shield,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
@@ -77,18 +76,20 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
               }}
               onClick={() => navigate('/')}
             >
-              <Shield size={24} style={{ color: 'rgba(255,255,255,0.9)' }} />
-              <Typography
-                variant="h5"
-                component="div"
+              <Box
+                component="img"
+                src="/KiddoLand_Logo.jpeg"
+                alt="KiddoLand Logo"
                 sx={{
-                  fontFamily: '"Fredoka", sans-serif',
-                  fontWeight: 800,
-                  letterSpacing: '-0.02em',
+                  height: { xs: 65, sm: 75, md: 85 },
+                  width: 'auto',
+                  objectFit: 'contain',
+                  transition: 'transform 0.2s ease',
+                  '&:hover': {
+                    transform: 'scale(1.05)',
+                  },
                 }}
-              >
-                KiddoLand
-              </Typography>
+              />
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
