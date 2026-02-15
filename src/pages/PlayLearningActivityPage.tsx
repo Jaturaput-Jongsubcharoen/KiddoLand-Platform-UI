@@ -8,7 +8,6 @@ import BackButton from '../components/BackButton';
 const PlayLearningActivityPage: React.FC = () => {
   return (
     <AppShellLayout>
-      {/* Background Scene Layer - 35% opacity for ambient feel */}
       <Box
         sx={{
           position: 'fixed',
@@ -20,15 +19,17 @@ const PlayLearningActivityPage: React.FC = () => {
       >
         <LearningWorldScene />
       </Box>
-      {/* Content Layer */}
+
       <Box sx={{ position: 'relative', zIndex: 1 }}>
         <Stack spacing={4}>
           <KiddoCard hoverEffect={false} sx={{ p: 2.5 }}>
             <SharedNavBar />
           </KiddoCard>
+
           <Box>
             <BackButton />
           </Box>
+
           <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
             <Typography variant="h4" sx={{ mb: 1 }}>
               Play a Learning Activity

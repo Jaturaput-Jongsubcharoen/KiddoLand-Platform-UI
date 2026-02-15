@@ -1,5 +1,5 @@
 import React from 'react';
-import { KiddoButton } from './KiddoButton';
+import { KiddoButton } from '.';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
