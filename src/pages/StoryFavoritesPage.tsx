@@ -47,6 +47,9 @@ export const StoryFavoritesPage: React.FC = () => {
 
         <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
           <Typography variant="h4">Favourite Stories</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Newest favorite stories appear first.
+          </Typography>
         </KiddoCard>
 
         {loading && (
@@ -63,7 +66,7 @@ export const StoryFavoritesPage: React.FC = () => {
         )}
         {!loading && !error && favorites.length > 0 && (
           <Stack spacing={2} sx={{ mt: 2 }}>
-            {favorites.map((item) => (
+            {[...favorites].reverse().map((item) => (
               <KiddoCard key={item.id} hoverEffect sx={{ p: 3 }}>
                 <Typography variant="subtitle2" color="text.secondary">
                   Age {item.age ?? 'N/A'} • {item.type} • {item.child_name ?? 'Unknown'}
