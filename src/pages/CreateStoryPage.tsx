@@ -112,7 +112,9 @@ export const CreateStoryPage: React.FC = () => {
   };
 
   const handleSaveFavorite = async () => {
-    if (!generatedStory) {
+    // Save the rewritten story if it exists, otherwise save the generated story
+    const storyToSave = rewrittenStory || generatedStory;
+    if (!storyToSave) {
       setErrorMessage('Please generate a story before saving favorite.');
       return;
     }
@@ -132,7 +134,7 @@ export const CreateStoryPage: React.FC = () => {
       setIsSavingFavorite(true);
       setErrorMessage('');
       setFavoriteMessage('');
-      const response = await saveFavoriteStory(prompt.trim(), generatedStory, age, appState.accessToken);
+      const response = await saveFavoriteStory(prompt.trim(), storyToSave, age, appState.accessToken);
       if (response.saved) {
         setIsFavoriteSaved(true);
       }
