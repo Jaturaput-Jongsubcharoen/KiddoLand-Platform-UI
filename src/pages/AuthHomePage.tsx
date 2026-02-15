@@ -78,6 +78,7 @@ export const AuthHomePage: React.FC = () => {
       });
       const tokenExpiresAt = Date.now() + response.expires_in * 1000;
       login(signInEmail, response.access_token, response.role, tokenExpiresAt);
+      localStorage.setItem('accessToken', response.access_token);
       navigate('/home');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to sign in.';
@@ -121,6 +122,7 @@ export const AuthHomePage: React.FC = () => {
       });
       const tokenExpiresAt = Date.now() + response.expires_in * 1000;
       login(signUpEmail, response.access_token, response.role, tokenExpiresAt);
+      localStorage.setItem('accessToken', response.access_token);
       navigate('/home');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to sign up.';

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import {
   BookOpen,
   Music,
@@ -8,12 +9,14 @@ import {
 } from 'lucide-react';
 import {
   AppShellLayout,
+  KiddoButton,
   KiddoCard,
   ActionTile,
   IconBadge,
   GridSection,
 } from '../components';
 import { LearningWorldScene } from '../components/LearningWorldScene';
+import { SharedNavBar } from '../components/SharedNavBar';
 
 const actionTiles = [
   {
@@ -40,6 +43,8 @@ const recentItems = [
 ];
 
 export const HomeDashboardPage: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <AppShellLayout>
       {/* Background Scene Layer - 35% opacity for ambient feel */}
@@ -58,6 +63,10 @@ export const HomeDashboardPage: React.FC = () => {
       {/* Content Layer */}
       <Box sx={{ position: 'relative', zIndex: 1 }}>
         <Stack spacing={4}>
+        <KiddoCard hoverEffect={false} sx={{ p: 2.5 }}>
+          <SharedNavBar />
+        </KiddoCard>
+
         <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
           <Typography variant="h4" sx={{ mb: 1 }}>
             Welcome back
@@ -74,6 +83,15 @@ export const HomeDashboardPage: React.FC = () => {
               title={tile.title}
               icon={tile.icon}
               tooltip={tile.tooltip}
+              onClick={
+                tile.title === 'Create a Story'
+                  ? () => navigate('/home/create-story')
+                  : tile.title === 'Create a Rhyme'
+                  ? () => navigate('/home/create-rhyme')
+                  : tile.title === 'Play a Learning Activity'
+                  ? () => navigate('/home/play-learning-activity')
+                  : undefined
+              }
             />
           ))}
         </GridSection>
