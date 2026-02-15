@@ -11,6 +11,11 @@ import AuthHomePage from './pages/AuthHomePage';
 import AuthInstitutionPage from './pages/AuthInstitutionPage';
 import HomeDashboardPage from './pages/HomeDashboardPage';
 import InstitutionDashboardPage from './pages/InstitutionDashboardPage';
+import CreateStoryPage from './pages/CreateStoryPage';
+import StoryHistoryPage from './pages/StoryHistoryPage';
+import StoryFavoritesPage from './pages/StoryFavoritesPage';
+import CreateRhymePage from './pages/CreateRhymePage';
+import PlayLearningActivityPage from './pages/PlayLearningActivityPage';
 
 const App: React.FC = () => {
   return (
@@ -37,6 +42,46 @@ const App: React.FC = () => {
               element={
                 <ProtectedRoute requireMode="home">
                   <HomeDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/home/create-story"
+              element={
+                <ProtectedRoute requireMode="home">
+                  <CreateStoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/home/create-rhyme"
+              element={
+                <ProtectedRoute requireMode="home">
+                  <CreateRhymePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/home/story-history"
+              element={
+                <ProtectedRoute requireMode="home">
+                  <StoryHistoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/home/story-favorites"
+              element={
+                <ProtectedRoute requireMode="home">
+                  <StoryFavoritesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/home/play-learning-activity"
+              element={
+                <ProtectedRoute requireMode="home">
+                  <PlayLearningActivityPage />
                 </ProtectedRoute>
               }
             />
