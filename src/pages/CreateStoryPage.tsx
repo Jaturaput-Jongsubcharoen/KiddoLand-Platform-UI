@@ -253,6 +253,14 @@ export const CreateStoryPage: React.FC = () => {
                   variant="outlined"
                   onClick={handleSaveFavorite}
                   disabled={isSavingFavorite || isFavoriteSaved}
+                  sx={{
+                    color: '#2563eb',
+                    border: '1.5px solid #2563eb',
+                    '&:hover': {
+                      backgroundColor: 'rgba(37,99,235,0.08)',
+                      borderColor: '#2563eb',
+                    },
+                  }}
                 >
                   {isFavoriteSaved
                     ? "Saved Favorite"
