@@ -11,7 +11,7 @@ export const SharedNavBar: React.FC = () => {
   const isFavorite = location.pathname === '/home/story-favorites';
 
   return (
-    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
       <KiddoButton
         variant={isHome ? 'contained' : 'outlined'}
         onClick={() => navigate('/home')}

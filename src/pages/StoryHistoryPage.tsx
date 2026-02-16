@@ -1,16 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { Alert, Box, CircularProgress, Stack, Typography } from '@mui/material';
-import { ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { AppShellLayout, KiddoButton, KiddoCard } from '../components';
-import { useApp } from '../context/AppContext';
-import { getStoryHistory, StoryHistoryItem } from '../utils/aiApi';
-import { SharedNavBar } from '../components/SharedNavBar';
-import BackButton from '../components/BackButton';
+import React, { useEffect, useState } from "react";
+import { Alert, Box, CircularProgress, Stack, Typography } from "@mui/material";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { useNavigate } from "react-router-dom";
+import { AppShellLayout, KiddoCard } from "../components";
+import { useApp } from "../context/AppContext";
+import { getStoryHistory, StoryHistoryItem } from "../utils/aiApi";
 
 const formatDate = (value: string | null): string => {
   if (!value) {
-    return 'Unknown';
+    return "Unknown";
   }
 
   const parsed = new Date(value);
@@ -27,23 +26,26 @@ export const StoryHistoryPage: React.FC = () => {
 
   const [items, setItems] = useState<StoryHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     const loadHistory = async () => {
       if (!appState.accessToken) {
-        setErrorMessage('You are not authenticated. Please sign in again.');
+        setErrorMessage("You are not authenticated. Please sign in again.");
         setIsLoading(false);
         return;
       }
 
       try {
         setIsLoading(true);
-        setErrorMessage('');
+        setErrorMessage("");
         const historyItems = await getStoryHistory(appState.accessToken);
         setItems(historyItems);
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unable to load story history.';
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unable to load story history.";
         setErrorMessage(message);
       } finally {
         setIsLoading(false);
@@ -56,13 +58,6 @@ export const StoryHistoryPage: React.FC = () => {
   return (
     <AppShellLayout>
       <Stack spacing={3}>
-        <KiddoCard hoverEffect={false} sx={{ p: 2.5 }}>
-          <SharedNavBar />
-        </KiddoCard>
-
-        <Box>
-          <BackButton />
-        </Box>
 
         <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
           <Typography variant="h4">Story History</Typography>
@@ -89,7 +84,8 @@ export const StoryHistoryPage: React.FC = () => {
             <KiddoCard key={item.id} hoverEffect={false} sx={{ p: 4 }}>
               <Stack spacing={1.25}>
                 <Typography variant="subtitle2" color="text.secondary">
-                  {formatDate(item.created_at)} • {item.type} • Age {item.age ?? 'N/A'} • Child {item.child_name}
+                  {formatDate(item.created_at)} • {item.type} • Age{" "}
+                  {item.age ?? "N/A"} • Child {item.child_name}
                 </Typography>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                   Prompt
@@ -100,9 +96,11 @@ export const StoryHistoryPage: React.FC = () => {
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, mt: 1 }}>
                   Story
                 </Typography>
-                <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-                  {item.story}
-                </Typography>
+                <Box sx={{ typography: "body1" }}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {item.story}
+                  </ReactMarkdown>
+                </Box>
               </Stack>
             </KiddoCard>
           ))

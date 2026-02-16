@@ -9,14 +9,12 @@ import {
 } from 'lucide-react';
 import {
   AppShellLayout,
-  KiddoButton,
   KiddoCard,
   ActionTile,
   IconBadge,
   GridSection,
 } from '../components';
 import { LearningWorldScene } from '../components/LearningWorldScene';
-import { SharedNavBar } from '../components/SharedNavBar';
 
 const actionTiles = [
   {
@@ -63,10 +61,6 @@ export const HomeDashboardPage: React.FC = () => {
       {/* Content Layer */}
       <Box sx={{ position: 'relative', zIndex: 1 }}>
         <Stack spacing={4}>
-        <KiddoCard hoverEffect={false} sx={{ p: 2.5 }}>
-          <SharedNavBar />
-        </KiddoCard>
-
         <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
           <Typography variant="h4" sx={{ mb: 1 }}>
             Welcome back

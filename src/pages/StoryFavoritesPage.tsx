@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Stack, Typography, CircularProgress, Alert } from '@mui/material';
-import { ArrowLeft } from 'lucide-react';
+import { Stack, Typography, CircularProgress, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { AppShellLayout, KiddoButton, KiddoCard } from '../components';
-import { SharedNavBar } from '../components/SharedNavBar';
+import { AppShellLayout, KiddoCard } from '../components';
 import { StoryHistoryItem, getFavoriteStories } from '../utils/aiApi';
-import BackButton from '../components/BackButton';
 
 export const StoryFavoritesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -37,14 +34,6 @@ export const StoryFavoritesPage: React.FC = () => {
   return (
     <AppShellLayout>
       <Stack spacing={3}>
-        <KiddoCard hoverEffect={false} sx={{ p: 2.5 }}>
-          <SharedNavBar />
-        </KiddoCard>
-
-        <Box>
-          <BackButton />
-        </Box>
-
         <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
           <Typography variant="h4">Favourite Stories</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>

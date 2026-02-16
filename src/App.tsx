@@ -1,5 +1,10 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kiddoTheme } from './theme/theme';
 import { AppProvider } from './context/AppContext';
@@ -22,12 +27,7 @@ const App: React.FC = () => {
     <ThemeProvider theme={kiddoTheme}>
       <CssBaseline />
       <AppProvider>
-        <Router
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-          }}
-        >
+        <Router>
           <Routes>
             {/* Mode Selection */}
             <Route path="/" element={<ModeSelectPage />} />
