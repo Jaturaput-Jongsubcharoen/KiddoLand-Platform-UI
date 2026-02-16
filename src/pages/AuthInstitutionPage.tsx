@@ -144,6 +144,11 @@ export const AuthInstitutionPage: React.FC = () => {
           value={signInPassword}
           onChange={(e) => setSignInPassword(e.target.value)}
           required
+          autoComplete="current-password"
+          sx={{
+            '& input[type="password"]::-ms-reveal': { display: 'none' },
+            '& input[type="password"]::-ms-clear': { display: 'none' },
+          }}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -227,6 +232,11 @@ export const AuthInstitutionPage: React.FC = () => {
           error={!!signUpErrors.password}
           helperText={signUpErrors.password || 'Min 8 characters, at least 1 letter and 1 number'}
           required
+          autoComplete="new-password"
+          sx={{
+            '& input[type="password"]::-ms-reveal': { display: 'none' },
+            '& input[type="password"]::-ms-clear': { display: 'none' },
+          }}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -250,6 +260,11 @@ export const AuthInstitutionPage: React.FC = () => {
           error={!!signUpErrors.confirmPassword}
           helperText={signUpErrors.confirmPassword}
           required
+          autoComplete="new-password"
+          sx={{
+            '& input[type="password"]::-ms-reveal': { display: 'none' },
+            '& input[type="password"]::-ms-clear': { display: 'none' },
+          }}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
