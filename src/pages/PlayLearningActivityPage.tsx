@@ -1,7 +1,6 @@
 import React from 'react';
 import { Box, Stack, Typography } from '@mui/material';
 import { AppShellLayout, KiddoCard } from '../components';
-import { SharedNavBar } from '../components/SharedNavBar';
 import { LearningWorldScene } from '../components/LearningWorldScene';
 import BackButton from '../components/BackButton';
 
@@ -22,10 +21,6 @@ const PlayLearningActivityPage: React.FC = () => {
 
       <Box sx={{ position: 'relative', zIndex: 1 }}>
         <Stack spacing={4}>
-          <KiddoCard hoverEffect={false} sx={{ p: 2.5 }}>
-            <SharedNavBar />
-          </KiddoCard>
-
           <Box>
             <BackButton />
           </Box>

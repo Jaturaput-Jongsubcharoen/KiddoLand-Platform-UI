@@ -5,7 +5,6 @@ import {
   Grid,
   CardContent,
   CardActionArea,
-  Chip,
   Stack,
 } from '@mui/material';
 import {

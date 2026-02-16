@@ -1,24 +1,18 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode } from "react";
 import {
   AppBar,
   Toolbar,
-  Typography,
   Container,
   Box,
   IconButton,
-  Chip,
   Menu,
   MenuItem,
-  Tooltip,
-} from '@mui/material';
-import {
-  User,
-  Home,
-  School,
-  LogOut,
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+  Divider,
+} from "@mui/material";
+import { User, Home, School, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useApp } from "../context/AppContext";
+import { SharedNavBar } from "./SharedNavBar";
 
 interface AppShellLayoutProps {
   children: ReactNode;
@@ -33,8 +27,8 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
   const { appState, logout } = useApp();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
-  const isHome = appState.selectedMode === 'home';
-  const isInstitution = appState.selectedMode === 'institution';
+  const isHomeMode = appState.selectedMode === "home";
+  const isInstitutionMode = appState.selectedMode === "institution";
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -47,112 +41,150 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
   const handleLogout = () => {
     logout();
     handleClose();
-    navigate('/');
+    navigate("/");
   };
 
   const getModeLabel = () => {
-    if (isHome) return 'Home Mode';
-    if (isInstitution) return 'Institution Mode';
-    return '';
+    if (isHomeMode) return "Home Mode";
+    if (isInstitutionMode) return "Institution Mode";
+    return "";
   };
 
   const getModeIcon = () => {
-    if (isHome) return <Home size={16} />;
-    if (isInstitution) return <School size={16} />;
-    return undefined;
+    if (isHomeMode) return <Home size={18} />;
+    if (isInstitutionMode) return <School size={18} />;
+    return null;
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       {showNav && (
         <AppBar position="sticky" elevation={0}>
-          <Toolbar sx={{ justifyContent: 'space-between' }}>
+          <Toolbar sx={{ justifyContent: "space-between" }}>
+            {/* ================= LEFT: LOGO ================= */}
             <Box
               sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                cursor: 'pointer',
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
               }}
-              onClick={() => navigate('/')}
             >
               <Box
                 component="img"
-                src="/KiddoLand_Logo.jpeg"
+                src="/KiddoLand_Logo.png"
                 alt="KiddoLand Logo"
                 sx={{
-                  height: { xs: 65, sm: 75, md: 85 },
-                  width: 'auto',
-                  objectFit: 'contain',
-                  transition: 'transform 0.2s ease',
-                  '&:hover': {
-                    transform: 'scale(1.05)',
-                  },
+                  height: { xs: 60, md: 80 },
+                  width: "auto",
+                  objectFit: "contain",
+                  transform: "scale(1.1)", // makes it appear bigger
+                  transition: "transform 0.2s ease",
                 }}
               />
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              {appState.selectedMode && (
-                <Chip
-                  icon={getModeIcon()}
-                  label={getModeLabel()}
-                  color={isHome ? 'secondary' : 'info'}
-                  sx={{
-                    color: '#0F172A',
-                    bgcolor: 'rgba(255,255,255,0.9)',
-                  }}
-                />
-              )}
-
-              {isInstitution && (
-                <Tooltip title="Institution workspace">
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: '50%',
-                      bgcolor: 'rgba(255,255,255,0.18)',
-                      display: 'flex',
-                      alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <School size={20} style={{ color: '#FFFFFF' }} />
-                </Box>
-                </Tooltip>
-              )}
-
+            {/* ================= RIGHT SECTION ================= */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+              }}
+            >
               {appState.isAuthenticated && (
                 <>
+                  {/* NAV BUTTONS (Desktop Only) */}
+                  <Box
+                    sx={{
+                      display: { xs: "none", md: "flex" },
+                      alignItems: "center",
+                    }}
+                  >
+                    <SharedNavBar />
+                  </Box>
+
+                  {/* USER ICON */}
                   <IconButton
                     size="large"
                     onClick={handleMenu}
                     sx={{
-                      color: '#FFFFFF',
-                      '&:hover': {
-                        transform: 'scale(1.05)',
+                      color: "#FFFFFF",
+                      "&:hover": {
+                        transform: "scale(1.05)",
                       },
                     }}
                   >
                     <User size={24} />
                   </IconButton>
+
+                  {/* DROPDOWN MENU */}
                   <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
                     onClose={handleClose}
-                    PaperProps={{
-                      sx: {
-                        borderRadius: 3,
-                        mt: 1,
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          borderRadius: 2,
+                          minWidth: 220,
+                          mt: 1,
+                          px: 1,
+                          py: 0.5,
+                        },
                       },
                     }}
                   >
-                    <MenuItem disabled sx={{ fontSize: '0.875rem', opacity: 1 }}>
-                      {appState.userEmail || 'Signed in'}
+                    {/* EMAIL */}
+                    <MenuItem
+                      disabled
+                      sx={{
+                        fontSize: "0.9rem",
+                        fontWeight: 600,
+                        opacity: 1,
+                      }}
+                    >
+                      {appState.userEmail || "Signed in"}
                     </MenuItem>
+
+                    {/* MODE INFO */}
+                    {appState.selectedMode && (
+                      <MenuItem
+                        disabled
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          opacity: 1,
+                          fontSize: "0.85rem",
+                          color: "text.secondary",
+                        }}
+                      >
+                        {getModeIcon()}
+                        {getModeLabel()}
+                      </MenuItem>
+                    )}
+
+                    <Divider sx={{ my: 1 }} />
+
+                    {/* MOBILE NAV ITEMS */}
+                    <Box sx={{ display: { xs: "block", md: "none" } }}>
+                      <MenuItem onClick={() => navigate("/home")}>
+                        Home
+                      </MenuItem>
+                      <MenuItem onClick={() => navigate("/home/story-history")}>
+                        History
+                      </MenuItem>
+                      <MenuItem
+                        onClick={() => navigate("/home/story-favorites")}
+                      >
+                        Favourite
+                      </MenuItem>
+                      <Divider sx={{ my: 1 }} />
+                    </Box>
+
+                    {/* LOGOUT */}
                     <MenuItem onClick={handleLogout}>
-                      <LogOut size={20} style={{ marginRight: '8px' }} />
+                      <LogOut size={18} style={{ marginRight: 8 }} />
                       Logout
                     </MenuItem>
                   </Menu>
@@ -163,11 +195,12 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
         </AppBar>
       )}
 
+      {/* ================= MAIN CONTENT ================= */}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          minHeight: showNav ? 'calc(100vh - 72px)' : '100vh',
+          minHeight: showNav ? "calc(100vh - 72px)" : "100vh",
         }}
       >
         <Container maxWidth="xl" sx={{ py: 4 }}>
