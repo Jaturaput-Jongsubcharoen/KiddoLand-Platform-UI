@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Stack, Typography, CircularProgress, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { AppShellLayout, KiddoCard } from '../components';
+import BackButton from '../components/BackButton';
 import { StoryHistoryItem, getFavoriteStories } from '../utils/aiApi';
 
 export const StoryFavoritesPage: React.FC = () => {
@@ -34,6 +35,9 @@ export const StoryFavoritesPage: React.FC = () => {
   return (
     <AppShellLayout>
       <Stack spacing={3}>
+        <div>
+          <BackButton />
+        </div>
         <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
           <Typography variant="h4">Favourite Stories</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
