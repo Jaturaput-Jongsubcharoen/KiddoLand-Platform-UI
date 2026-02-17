@@ -5,6 +5,17 @@ export interface AuthLoginResponse {
   expires_in: number;
   role: string;
   mode: AuthMode;
+  first_name?: string;
+  last_name?: string;
+  full_name?: string;
+}
+
+export interface UserProfile {
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  full_name?: string;
+  role?: string;
 }
 
 export interface AuthRegisterRequest {
@@ -61,6 +72,25 @@ export const registerWithPassword = async (
   if (!response.ok) {
     const errorPayload = await response.json().catch(() => ({}));
     const errorMessage = errorPayload?.detail || 'Unable to sign up. Please try again.';
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+};
+
+export const getUserProfile = async (accessToken: string): Promise<UserProfile> => {
+  const apiBaseUrl = resolveApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/auth/me`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({}));
+    const errorMessage = errorPayload?.detail || 'Unable to fetch user profile.';
     throw new Error(errorMessage);
   }
 

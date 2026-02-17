@@ -125,7 +125,7 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
                     slotProps={{
                       paper: {
                         sx: {
-                          borderRadius: 2,
+                          borderRadius: 1,
                           minWidth: 220,
                           mt: 1,
                           px: 1,
@@ -134,7 +134,7 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
                       },
                     }}
                   >
-                    {/* EMAIL */}
+                    {/* USER NAME */}
                     <MenuItem
                       disabled
                       sx={{
@@ -143,7 +143,7 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
                         opacity: 1,
                       }}
                     >
-                      {appState.userEmail || "Signed in"}
+                      {appState.userName || appState.userEmail || "Signed in"}
                     </MenuItem>
 
                     {/* MODE INFO */}

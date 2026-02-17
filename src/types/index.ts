@@ -9,3 +9,14 @@ export type {
   RecentItemData,
   GridColumns,
 } from './common';
+
+// Child Profile types
+export type {
+  ChildProfile,
+  ChildProfileContextType,
+} from './childProfile';
+
+export {
+  INTEREST_OPTIONS,
+  AGE_BANDS,
+} from './childProfile';

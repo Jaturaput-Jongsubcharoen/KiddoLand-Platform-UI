@@ -15,7 +15,7 @@ import {
   KiddoButton,
   AuthLayout,
 } from '../components';
-import { loginWithPassword } from '../utils/authApi';
+import { loginWithPassword, getUserProfile } from '../utils/authApi';
 import {
   validateInstitutionEmail,
   validateName,
@@ -82,7 +82,21 @@ export const AuthInstitutionPage: React.FC = () => {
         mode: 'institution',
       });
       const tokenExpiresAt = Date.now() + response.expires_in * 1000;
-      login(signInEmail, response.access_token, response.role, tokenExpiresAt);
+      
+      // Try to get user profile to fetch their name
+      let userName: string | undefined;
+      try {
+        const profile = await getUserProfile(response.access_token);
+        userName = profile.full_name || 
+                   (profile.first_name && profile.last_name 
+                     ? `${profile.first_name} ${profile.last_name}` 
+                     : profile.first_name || profile.last_name);
+      } catch (profileError) {
+        console.warn('Could not fetch user profile:', profileError);
+        // Continue with login even if profile fetch fails
+      }
+      
+      login(signInEmail, response.access_token, response.role, tokenExpiresAt, userName);
       navigate('/institution');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to sign in.';

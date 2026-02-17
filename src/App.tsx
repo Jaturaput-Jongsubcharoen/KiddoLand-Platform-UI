@@ -16,7 +16,7 @@ import AuthHomePage from './pages/AuthHomePage';
 import AuthInstitutionPage from './pages/AuthInstitutionPage';
 import HomeDashboardPage from './pages/HomeDashboardPage';
 import InstitutionDashboardPage from './pages/InstitutionDashboardPage';
-import CreateStoryPage from './pages/CreateStoryPage';
+import CreateStoryUnifiedPage from './pages/CreateStoryUnifiedPage';
 import StoryHistoryPage from './pages/StoryHistoryPage';
 import StoryFavoritesPage from './pages/StoryFavoritesPage';
 import CreateRhymePage from './pages/CreateRhymePage';
@@ -27,8 +27,8 @@ const App: React.FC = () => {
     <ThemeProvider theme={kiddoTheme}>
       <CssBaseline />
       <AppProvider>
-        <Router>
-          <Routes>
+          <Router>
+            <Routes>
             {/* Mode Selection */}
             <Route path="/" element={<ModeSelectPage />} />
 
@@ -49,7 +49,7 @@ const App: React.FC = () => {
               path="/home/create-story"
               element={
                 <ProtectedRoute requireMode="home">
-                  <CreateStoryPage />
+                  <CreateStoryUnifiedPage />
                 </ProtectedRoute>
               }
             />
