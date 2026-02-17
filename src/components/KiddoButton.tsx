@@ -5,19 +5,15 @@ interface KiddoButtonProps extends ButtonProps {
   glow?: boolean;
 }
 
-export const KiddoButton: React.FC<KiddoButtonProps> = ({
-  glow = false,
-  sx,
-  variant,
-  children,
-  ...props
-}) => {
+export const KiddoButton = React.forwardRef<HTMLButtonElement, KiddoButtonProps>(
+  ({ glow = false, sx, variant, children, ...props }, ref) => {
   const isContained = variant === 'contained';
 
-  return (
-    <Button
-      {...props}
-      variant={variant}
+    return (
+      <Button
+        ref={ref}
+        {...props}
+        variant={variant}
       sx={{
         borderRadius: '24px',
         padding: '10px 26px',
@@ -52,9 +48,12 @@ export const KiddoButton: React.FC<KiddoButtonProps> = ({
         ...sx,
       }}
     >
-      {children}
-    </Button>
-  );
-};
+        {children}
+      </Button>
+    );
+  }
+);
+
+KiddoButton.displayName = 'KiddoButton';
 
 export default KiddoButton;

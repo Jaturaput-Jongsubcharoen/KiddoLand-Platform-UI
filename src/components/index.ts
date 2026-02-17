@@ -19,5 +19,12 @@ export { AuthLayout } from './layouts/AuthLayout';
 // Auth Components
 export { ProtectedRoute } from './ProtectedRoute';
 
+// Story Creation Components
+export { StoryPreviewPanel } from './story-creation/StoryPreviewPanel';
+export { StoryEditorPanel } from './story-creation/StoryEditorPanel';
+export { VoiceRecorderComponent } from './story-creation/VoiceRecorderComponent';
+export { ImageUploader } from './story-creation/ImageUploader';
+export { ModeSwitcher } from './story-creation/ModeSwitcher';
+
 // Type exports
 export type { IconBadgeSize, IconBadgeShape } from './ui/IconBadge';

@@ -20,17 +20,20 @@ const actionTiles = [
   {
     title: 'Create a Story',
     icon: <BookOpen />,
-    tooltip: 'Structured inputs only: age band, interests, learning goal.',
+    tooltip: 'Multiple ways to create: type, speak, upload image, or use guided form - all in one place',
+    route: '/home/create-story',
   },
   {
     title: 'Create a Rhyme',
     icon: <Music />,
-    tooltip: 'Structured inputs only: age band, interests, learning goal.',
+    tooltip: 'Create personalized rhymes and songs',
+    route: '/home/create-rhyme',
   },
   {
     title: 'Play a Learning Activity',
     icon: <Gamepad2 />,
-    tooltip: 'Structured inputs only: age band, interests, learning goal.',
+    tooltip: 'Interactive educational games',
+    route: '/home/play-learning-activity',
   },
 ];
 
@@ -66,7 +69,7 @@ export const HomeDashboardPage: React.FC = () => {
             Welcome back
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Choose a structured activity. Inputs are guided by age band, interests, and learning goal.
+            Choose how you'd like to create content for your child
           </Typography>
         </KiddoCard>
 
@@ -77,15 +80,7 @@ export const HomeDashboardPage: React.FC = () => {
               title={tile.title}
               icon={tile.icon}
               tooltip={tile.tooltip}
-              onClick={
-                tile.title === 'Create a Story'
-                  ? () => navigate('/home/create-story')
-                  : tile.title === 'Create a Rhyme'
-                  ? () => navigate('/home/create-rhyme')
-                  : tile.title === 'Play a Learning Activity'
-                  ? () => navigate('/home/play-learning-activity')
-                  : undefined
-              }
+              onClick={() => navigate(tile.route)}
             />
           ))}
         </GridSection>

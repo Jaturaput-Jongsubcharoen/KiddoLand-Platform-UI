@@ -9,6 +9,7 @@ export interface StoryHistoryItem {
   prompt: string;
   story: string;
   age: number | null;
+  is_favorite: boolean;
   mode: string;
   type: 'generate' | 'rewrite';
   created_at: string | null;
@@ -197,4 +198,69 @@ export const getFavoriteStories = async (accessToken: string): Promise<StoryHist
   }
 
   return await response.json();
+};
+
+export const deleteStory = async (storyId: string, accessToken: string): Promise<{ success: boolean; message: string }> => {
+  const apiBaseUrl = resolveApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/ai/history/${storyId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({}));
+    const backendMessage = typeof errorPayload?.detail === 'string' ? errorPayload.detail : '';
+
+    if (response.status === 401) {
+      throw new Error('Your session has expired. Please sign in again.');
+    }
+
+    if (response.status === 404) {
+      throw new Error('Story not found or already deleted.');
+    }
+
+    if (response.status >= 500) {
+      throw new Error('Server is unavailable right now. Please try again shortly.');
+    }
+
+    throw new Error(backendMessage || 'Unable to delete story right now.');
+  }
+
+  return response.json();
+};
+
+export const toggleFavorite = async (
+  storyId: string,
+  accessToken: string
+): Promise<{ success: boolean; is_favorite: boolean; message: string }> => {
+  const apiBaseUrl = resolveApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/ai/history/${storyId}/favorite`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({}));
+    const backendMessage = typeof errorPayload?.detail === 'string' ? errorPayload.detail : '';
+
+    if (response.status === 401) {
+      throw new Error('Your session has expired. Please sign in again.');
+    }
+
+    if (response.status === 404) {
+      throw new Error('Story not found.');
+    }
+
+    if (response.status >= 500) {
+      throw new Error('Server is unavailable right now. Please try again shortly.');
+    }
+
+    throw new Error(backendMessage || 'Unable to update favorite status right now.');
+  }
+
+  return response.json();
 };
