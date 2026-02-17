@@ -10,6 +10,14 @@ const BackButton: React.FC = () => {
       variant="outlined"
       onClick={() => navigate(-1)}
       startIcon={<ArrowLeft size={18} />}
+      sx={{
+        color: '#2563eb',
+        border: '1.5px solid #2563eb',
+        '&:hover': {
+          backgroundColor: 'rgba(37,99,235,0.08)',
+          borderColor: '#2563eb',
+        },
+      }}
     >
       Back
     </KiddoButton>

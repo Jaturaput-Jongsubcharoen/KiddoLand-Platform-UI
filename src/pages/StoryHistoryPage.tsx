@@ -17,6 +17,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { X, Minimize2, Maximize2, Trash2, Heart } from "lucide-react";
 import { AppShellLayout, KiddoCard, KiddoButton } from "../components";
+import BackButton from "../components/BackButton";
 import { useApp } from "../context/AppContext";
 import { getStoryHistory, StoryHistoryItem, deleteStory, toggleFavorite } from "../utils/aiApi";
 
@@ -162,6 +163,9 @@ export const StoryHistoryPage: React.FC = () => {
   return (
     <AppShellLayout>
       <Stack spacing={3}>
+        <Box>
+          <BackButton />
+        </Box>
         <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
           <Typography variant="h4">Story History</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>

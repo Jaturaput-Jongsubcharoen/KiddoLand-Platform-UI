@@ -27,8 +27,11 @@ const App: React.FC = () => {
     <ThemeProvider theme={kiddoTheme}>
       <CssBaseline />
       <AppProvider>
-          <Router>
-            <Routes>
+        <Router future={{ 
+          v7_startTransition: true,
+          v7_relativeSplatPath: true 
+        }}>
+          <Routes>
             {/* Mode Selection */}
             <Route path="/" element={<ModeSelectPage />} />
 
