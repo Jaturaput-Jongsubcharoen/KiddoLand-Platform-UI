@@ -80,7 +80,7 @@ export const registerWithPassword = async (
 
 export const getUserProfile = async (accessToken: string): Promise<UserProfile> => {
   const apiBaseUrl = resolveApiBaseUrl();
-  const response = await fetch(`${apiBaseUrl}/auth/me`, {
+  const response = await fetch(`${apiBaseUrl}/auth/validate`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${accessToken}`,

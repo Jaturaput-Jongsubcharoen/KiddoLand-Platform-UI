@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Box,
@@ -8,16 +8,20 @@ import {
   IconButton,
   Stack,
   Typography,
-} from '@mui/material';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { X, Minimize2, Maximize2, Heart } from 'lucide-react';
-import { AppShellLayout, KiddoCard, KiddoButton } from '../components';
-import { useApp } from '../context/AppContext';
-import { StoryHistoryItem, getFavoriteStories, toggleFavorite } from '../utils/aiApi';
+} from "@mui/material";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { X, Minimize2, Maximize2, Heart } from "lucide-react";
+import { AppShellLayout, KiddoCard, KiddoButton } from "../components";
+import { useApp } from "../context/AppContext";
+import {
+  StoryHistoryItem,
+  getFavoriteStories,
+  toggleFavorite,
+} from "../utils/aiApi";
 
 const formatDate = (value: string | null): string => {
-  if (!value) return 'Unknown';
+  if (!value) return "Unknown";
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString();
 };
@@ -32,8 +36,10 @@ export const StoryFavoritesPage: React.FC = () => {
   const { appState } = useApp();
   const [items, setItems] = useState<StoryHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [selectedItem, setSelectedItem] = useState<StoryHistoryItem | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [selectedItem, setSelectedItem] = useState<StoryHistoryItem | null>(
+    null,
+  );
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Pagination state
@@ -43,7 +49,7 @@ export const StoryFavoritesPage: React.FC = () => {
   useEffect(() => {
     const loadFavorites = async () => {
       if (!appState.accessToken) {
-        setErrorMessage('You are not authenticated.');
+        setErrorMessage("You are not authenticated.");
         setIsLoading(false);
         return;
       }
@@ -53,7 +59,7 @@ export const StoryFavoritesPage: React.FC = () => {
         setItems(favoriteItems);
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : 'Unable to load favorites.';
+          error instanceof Error ? error.message : "Unable to load favorites.";
         setErrorMessage(message);
       } finally {
         setIsLoading(false);
@@ -64,7 +70,7 @@ export const StoryFavoritesPage: React.FC = () => {
   }, [appState.accessToken]);
 
   const sortedItems = [...items].sort(
-    (a, b) => toTimestamp(b.created_at) - toTimestamp(a.created_at)
+    (a, b) => toTimestamp(b.created_at) - toTimestamp(a.created_at),
   );
 
   const displayedItems = sortedItems.slice(0, displayCount);
@@ -78,7 +84,10 @@ export const StoryFavoritesPage: React.FC = () => {
     setIsFullScreen((prev) => !prev);
   };
 
-  const handleFavoriteClick = async (e: React.MouseEvent, item: StoryHistoryItem) => {
+  const handleFavoriteClick = async (
+    e: React.MouseEvent,
+    item: StoryHistoryItem,
+  ) => {
     e.stopPropagation(); // Prevent card click
 
     if (!appState.accessToken) return;
@@ -88,8 +97,10 @@ export const StoryFavoritesPage: React.FC = () => {
 
       // If unfavorited, remove from the list
       if (!response.is_favorite) {
-        setItems((prev) => prev.filter((storyItem) => storyItem.id !== item.id));
-        
+        setItems((prev) =>
+          prev.filter((storyItem) => storyItem.id !== item.id),
+        );
+
         // If viewing the unfavorited story in dialog, close it
         if (selectedItem?.id === item.id) {
           setSelectedItem(null);
@@ -97,7 +108,9 @@ export const StoryFavoritesPage: React.FC = () => {
       }
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Unable to update favorite status.';
+        error instanceof Error
+          ? error.message
+          : "Unable to update favorite status.";
       setErrorMessage(message);
     }
   };
@@ -109,12 +122,11 @@ export const StoryFavoritesPage: React.FC = () => {
   return (
     <AppShellLayout>
       <Stack spacing={3}>
-        <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
-          <Typography variant="h4">Favourite Stories</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Your saved stories appear here. Click the heart to remove from favorites.
-          </Typography>
-        </KiddoCard>
+        <Typography variant="h4">Favourite Stories</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          Your saved stories appear here. Click the heart to remove from
+          favorites.
+        </Typography>
 
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 
@@ -127,7 +139,9 @@ export const StoryFavoritesPage: React.FC = () => {
           </KiddoCard>
         ) : sortedItems.length === 0 ? (
           <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
-            <Typography>No favorite stories yet. Add some from your Story History!</Typography>
+            <Typography>
+              No favorite stories yet. Add some from your Story History!
+            </Typography>
           </KiddoCard>
         ) : (
           <>
@@ -138,12 +152,12 @@ export const StoryFavoritesPage: React.FC = () => {
                     hoverEffect
                     sx={{
                       p: 3,
-                      cursor: 'pointer',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      position: 'relative',
+                      cursor: "pointer",
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      position: "relative",
                     }}
                     onClick={() => setSelectedItem(item)}
                   >
@@ -151,14 +165,14 @@ export const StoryFavoritesPage: React.FC = () => {
                     <IconButton
                       onClick={(e) => handleFavoriteClick(e, item)}
                       sx={{
-                        position: 'absolute',
+                        position: "absolute",
                         top: 8,
                         right: 8,
-                        color: '#E91E63',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          color: '#999',
-                          transform: 'scale(1.15)',
+                        color: "#E91E63",
+                        transition: "all 0.2s ease",
+                        "&:hover": {
+                          color: "#999",
+                          transform: "scale(1.15)",
                         },
                       }}
                     >
@@ -171,15 +185,15 @@ export const StoryFavoritesPage: React.FC = () => {
                       </Typography>
 
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        Age {item.age ?? 'N/A'}
+                        Age {item.age ?? "N/A"}
                       </Typography>
 
                       <Typography
                         variant="body2"
                         sx={{
-                          fontSize: '0.85rem',
-                          color: 'text.secondary',
-                          textTransform: 'capitalize',
+                          fontSize: "0.85rem",
+                          color: "text.secondary",
+                          textTransform: "capitalize",
                         }}
                       >
                         {item.type}
@@ -189,10 +203,10 @@ export const StoryFavoritesPage: React.FC = () => {
                     <Typography
                       sx={{
                         mt: 3,
-                        fontSize: '0.75rem',
-                        color: 'text.disabled',
-                        fontStyle: 'italic',
-                        letterSpacing: '0.5px',
+                        fontSize: "0.75rem",
+                        color: "text.disabled",
+                        fontStyle: "italic",
+                        letterSpacing: "0.5px",
                       }}
                     >
                       {formatDate(item.created_at)}
@@ -204,16 +218,18 @@ export const StoryFavoritesPage: React.FC = () => {
 
             {/* Load More Button */}
             {hasMore && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
                 <KiddoButton
                   variant="contained"
                   onClick={handleLoadMore}
                   sx={{
-                    background: 'linear-gradient(135deg, #4ECDC4 0%, #45B649 100%)',
-                    boxShadow: '0 4px 14px rgba(78, 205, 196, 0.4)',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #45B649 0%, #4ECDC4 100%)',
-                      boxShadow: '0 6px 20px rgba(78, 205, 196, 0.6)',
+                    background:
+                      "linear-gradient(135deg, #4ECDC4 0%, #45B649 100%)",
+                    boxShadow: "0 4px 14px rgba(78, 205, 196, 0.4)",
+                    "&:hover": {
+                      background:
+                        "linear-gradient(135deg, #45B649 0%, #4ECDC4 100%)",
+                      boxShadow: "0 6px 20px rgba(78, 205, 196, 0.6)",
                     },
                   }}
                 >
@@ -234,21 +250,21 @@ export const StoryFavoritesPage: React.FC = () => {
         fullWidth
         BackdropProps={{
           sx: {
-            backdropFilter: 'blur(10px)',
-            backgroundColor: 'rgba(15,23,42,0.55)',
+            backdropFilter: "blur(10px)",
+            backgroundColor: "rgba(15,23,42,0.55)",
           },
         }}
         PaperProps={{
           sx: {
-            transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)',
+            transition: "all 0.35s cubic-bezier(0.4,0,0.2,1)",
             borderRadius: isFullScreen ? 0 : 1,
-            height: isFullScreen ? '100%' : '80vh',
-            width: isFullScreen ? '100%' : '90%',
-            maxWidth: isFullScreen ? '100%' : 900,
-            margin: isFullScreen ? 0 : 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
+            height: isFullScreen ? "100%" : "80vh",
+            width: isFullScreen ? "100%" : "90%",
+            maxWidth: isFullScreen ? "100%" : 900,
+            margin: isFullScreen ? 0 : "auto",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
           },
         }}
       >
@@ -257,14 +273,14 @@ export const StoryFavoritesPage: React.FC = () => {
             {/* Header */}
             <Box
               sx={{
-                display: 'flex',
-                alignItems: 'center',
+                display: "flex",
+                alignItems: "center",
                 px: 3,
                 py: 2,
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-                backgroundColor: 'rgba(248,250,252,0.8)',
-                backdropFilter: 'blur(6px)',
+                borderBottom: "1px solid",
+                borderColor: "divider",
+                backgroundColor: "rgba(248,250,252,0.8)",
+                backdropFilter: "blur(6px)",
               }}
             >
               {/* LEFT: Close */}
@@ -272,25 +288,29 @@ export const StoryFavoritesPage: React.FC = () => {
                 <X size={18} />
               </IconButton>
 
-              <Box sx={{ flex: 1, textAlign: 'center' }}>
+              <Box sx={{ flex: 1, textAlign: "center" }}>
                 <Typography fontWeight={600}>Favorite Story</Typography>
               </Box>
 
               {/* RIGHT: Remove from Favorites + Minimize/Maximize */}
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              <Box sx={{ display: "flex", gap: 1 }}>
                 <IconButton
                   onClick={(e) => handleFavoriteClick(e, selectedItem)}
                   sx={{
-                    color: '#E91E63',
-                    '&:hover': {
-                      color: '#999',
+                    color: "#E91E63",
+                    "&:hover": {
+                      color: "#999",
                     },
                   }}
                 >
                   <Heart size={20} fill="#E91E63" strokeWidth={2} />
                 </IconButton>
                 <IconButton onClick={toggleSize}>
-                  {isFullScreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                  {isFullScreen ? (
+                    <Minimize2 size={18} />
+                  ) : (
+                    <Maximize2 size={18} />
+                  )}
                 </IconButton>
               </Box>
             </Box>
@@ -298,8 +318,9 @@ export const StoryFavoritesPage: React.FC = () => {
             {/* Metadata */}
             <Box sx={{ px: 4, py: 3 }}>
               <Typography color="text.secondary">
-                {formatDate(selectedItem.created_at)} | {selectedItem.type} | Age{' '}
-                {selectedItem.age ?? 'N/A'} | Child {selectedItem.child_name}
+                {formatDate(selectedItem.created_at)} | {selectedItem.type} |
+                Age {selectedItem.age ?? "N/A"} | Child{" "}
+                {selectedItem.child_name}
               </Typography>
             </Box>
 
@@ -309,7 +330,7 @@ export const StoryFavoritesPage: React.FC = () => {
                 flex: 1,
                 px: 4,
                 pb: 4,
-                overflowY: 'auto',
+                overflowY: "auto",
               }}
             >
               <ReactMarkdown remarkPlugins={[remarkGfm]}>

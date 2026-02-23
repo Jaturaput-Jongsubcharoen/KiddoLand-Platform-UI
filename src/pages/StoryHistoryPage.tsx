@@ -163,16 +163,10 @@ export const StoryHistoryPage: React.FC = () => {
   return (
     <AppShellLayout>
       <Stack spacing={3}>
-        <Box>
-          <BackButton />
-        </Box>
-        <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
           <Typography variant="h4">Story History</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Newest stories appear first.
           </Typography>
-        </KiddoCard>
-
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 
         {isLoading ? (
