@@ -64,14 +64,12 @@ export const HomeDashboardPage: React.FC = () => {
       {/* Content Layer */}
       <Box sx={{ position: 'relative', zIndex: 1 }}>
         <Stack spacing={4}>
-        <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
           <Typography variant="h4" sx={{ mb: 1 }}>
             Welcome back
           </Typography>
           <Typography variant="body1" color="text.secondary">
             Choose how you'd like to create content for your child
           </Typography>
-        </KiddoCard>
 
         <GridSection title="Quick Actions">
           {actionTiles.map((tile) => (
