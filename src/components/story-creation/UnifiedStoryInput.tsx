@@ -16,6 +16,9 @@ import { ImageUploadButton } from "./ImageUploadButton";
 import { AdvancedOptionsPanel } from "./AdvancedOptionsPanel";
 
 interface UnifiedStoryInputProps {
+  mode: "home" | "institution" | null;
+  childName: string;
+  setChildName: (name: string) => void;
   textPrompt: string;
   setTextPrompt: (prompt: string) => void;
   voiceTranscription: string | null;
@@ -40,6 +43,7 @@ interface UnifiedStoryInputProps {
   setCurrentMood: (mood: string) => void;
   language: string;
   setLanguage: (language: string) => void;
+  detectedSummary: string;
   onGenerate: () => void;
   isGenerating: boolean;
   errorMessage: string;
@@ -47,6 +51,9 @@ interface UnifiedStoryInputProps {
 }
 
 export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
+  mode,
+  childName,
+  setChildName,
   textPrompt,
   setTextPrompt,
   voiceTranscription,
@@ -71,6 +78,7 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
   setCurrentMood,
   language,
   setLanguage,
+  detectedSummary,
   onGenerate,
   isGenerating,
   errorMessage,
@@ -103,7 +111,8 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
     learningGoal !== "Just for fun" || 
     currentMood || 
     language !== "en" || 
-    ageBand;
+    ageBand ||
+    childName;
   
   const canGenerate = hasAnyInput;
 
@@ -158,13 +167,16 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
             fontSize: '1.05rem',
             fontWeight: 500,
           }}>
-            ✨ Tell KiddoLand what kind of story you need - no limitations or restrictions!
+            ✨ Tell KiddoLand what kind of story you’d like. We’ll keep it fun and age‑friendly!
           </Typography>
         </Box>
 
         {/* Advanced Options Panel - Directly below header */}
         <Collapse in={isAdvancedOpen}>
           <AdvancedOptionsPanel
+            mode={mode}
+            childName={childName}
+            setChildName={setChildName}
             ageBand={ageBand}
             setAgeBand={setAgeBand}
             interests={interests}
@@ -265,6 +277,11 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
               🎤 Voice Input:
             </Typography>
             <Typography variant="body2">{voiceTranscription}</Typography>
+            {detectedSummary && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
+                Detected: {detectedSummary}
+              </Typography>
+            )}
           </Alert>
         )}
 

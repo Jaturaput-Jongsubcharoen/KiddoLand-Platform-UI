@@ -28,6 +28,15 @@ export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({
   const [isSupported, setIsSupported] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+  const onTranscribeRef = useRef(onTranscribe);
+  const shouldRestartRef = useRef(false);
+  const finalTranscriptRef = useRef("");
+  const isStartingRef = useRef(false);
+  const restartTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    onTranscribeRef.current = onTranscribe;
+  }, [onTranscribe]);
 
   useEffect(() => {
     // Check if Web Speech API is supported
@@ -41,35 +50,100 @@ export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({
 
     // Initialize speech recognition
     const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.interimResults = true;
     recognition.lang = "en-US";
     recognition.maxAlternatives = 1;
 
+    recognition.onstart = () => {
+      isStartingRef.current = false;
+      setIsRecording(true);
+    };
+
     recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      onTranscribe(transcript);
-      setIsRecording(false);
+      let interimTranscript = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscriptRef.current += `${transcript} `;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+
+      const combined = `${finalTranscriptRef.current} ${interimTranscript}`.trim();
+      if (combined) {
+        onTranscribeRef.current(combined);
+      }
     };
 
     recognition.onerror = (event: any) => {
       console.error("Speech recognition error:", event.error);
-      setError(event.error === "no-speech" ? "No speech detected. Please try again." : "Voice input failed. Please try again.");
-      setIsRecording(false);
+      if (event.error === "aborted") {
+        if (!shouldRestartRef.current) {
+          setIsRecording(false);
+        }
+        return;
+      }
+
+      setError(
+        event.error === "no-speech"
+          ? "No speech detected. Please try again."
+          : "Voice input failed. Please try again."
+      );
+
+      if (event.error !== "no-speech") {
+        shouldRestartRef.current = false;
+        setIsRecording(false);
+      }
     };
 
     recognition.onend = () => {
+      if (shouldRestartRef.current) {
+        if (restartTimeoutRef.current) {
+          window.clearTimeout(restartTimeoutRef.current);
+        }
+        restartTimeoutRef.current = window.setTimeout(() => {
+          if (!isStartingRef.current) {
+            startRecognition();
+          }
+        }, 250);
+        return;
+      }
+
       setIsRecording(false);
     };
 
     recognitionRef.current = recognition;
 
     return () => {
+      shouldRestartRef.current = false;
+      if (restartTimeoutRef.current) {
+        window.clearTimeout(restartTimeoutRef.current);
+      }
       if (recognitionRef.current) {
         recognitionRef.current.abort();
       }
     };
-  }, [onTranscribe]);
+  }, []);
+
+  const startRecognition = () => {
+    if (!recognitionRef.current || isStartingRef.current) {
+      return;
+    }
+
+    isStartingRef.current = true;
+    try {
+      recognitionRef.current.start();
+    } catch (err) {
+      console.error("Failed to start recognition:", err);
+      isStartingRef.current = false;
+      shouldRestartRef.current = false;
+      setError("Failed to start voice input. Please try again.");
+      setIsRecording(false);
+    }
+  };
 
   const handleClick = () => {
     if (!isSupported) {
@@ -79,19 +153,17 @@ export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({
 
     if (isRecording) {
       // Stop recording
+      shouldRestartRef.current = false;
       recognitionRef.current?.stop();
       setIsRecording(false);
     } else {
       // Start recording
       setError(null);
+      shouldRestartRef.current = true;
+      finalTranscriptRef.current = "";
+      onTranscribe("");
       setIsRecording(true);
-      try {
-        recognitionRef.current?.start();
-      } catch (err) {
-        console.error("Failed to start recognition:", err);
-        setError("Failed to start voice input. Please try again.");
-        setIsRecording(false);
-      }
+      startRecognition();
     }
   };
 
@@ -104,7 +176,7 @@ export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({
   const buttonLabel = currentTranscription
     ? "Voice Added ✓"
     : isRecording
-    ? "Listening..."
+    ? "I'm Listening..."
     : "Add Voice";
 
   const tooltipText = !isSupported
