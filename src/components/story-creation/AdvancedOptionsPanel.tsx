@@ -28,6 +28,9 @@ import {
 } from "../../types/storyOptions";
 
 interface AdvancedOptionsPanelProps {
+  mode: "home" | "institution" | null;
+  childName: string;
+  setChildName: (name: string) => void;
   ageBand: number | null;
   setAgeBand: (age: number | null) => void;
   interests: string[];
@@ -47,6 +50,9 @@ interface AdvancedOptionsPanelProps {
 }
 
 export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
+  mode,
+  childName,
+  setChildName,
   ageBand,
   setAgeBand,
   interests,
@@ -89,13 +95,23 @@ export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             Story Preferences
           </Typography>
-          <Alert severity="info" icon={<Shield size={18} />} sx={{ py: 0.5 }}>
+        
             <Typography variant="caption">
-              🔒 <strong>Privacy First:</strong> All preferences are optional and only used for this story.
-              Nothing is saved.
+              🔒 <strong>Privacy First:</strong>  These preferences are optional and only used to create this story. We don’t save them.
             </Typography>
-          </Alert>
+          
         </Box>
+
+        {/* Child Name (Home Mode Only) */}
+        {mode === "home" && (
+          <TextField
+            label="Child Name (Optional)"
+            value={childName}
+            onChange={(e) => setChildName(e.target.value)}
+            helperText="Used to personalize the story. Optional."
+            fullWidth
+          />
+        )}
 
         {/* Age Band - Optional */}
         <FormControl fullWidth>

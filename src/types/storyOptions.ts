@@ -53,8 +53,22 @@ export const INTERESTS = [
   'Mystery',
   'Fantasy',
   'Science',
+  'Technology',
   'Cooking',
   'Travel',
+  'Fairy Tales',
+  'Superheroes',
+  'Jungle',
+  'History',
+  'Celebrations',
+  'Festivals',
+  'Cartoon',
+  'Vehicles',
+  'Pets',
+  'Cultures',
+  'Inventions',
+  'Seasons',
+  'Comic',
 ] as const;
 
 export const TONES = [
@@ -112,7 +126,26 @@ export const MOODS = [
 
 export const LANGUAGES = [
   { value: 'en', label: 'English (Default)' },
-  // Future: Spanish, French, etc.
+  { value: 'es', label: 'Spanish' },
+  { value: 'zh', label: 'Chinese (Mandarin)' },
+  { value: 'hi', label: 'Hindi' },
+  { value: 'fr', label: 'French' },
+  { value: 'ar', label: 'Arabic' },
+  { value: 'bn', label: 'Bengali' },
+  { value: 'pt', label: 'Portuguese' },
+  { value: 'ru', label: 'Russian' },
+  { value: 'ur', label: 'Urdu' },
+  { value: 'id', label: 'Indonesian' },
+  { value: 'de', label: 'German' },
+  { value: 'ja', label: 'Japanese' },
+  { value: 'sw', label: 'Gujarati' },
+  { value: 'mr', label: 'Marathi' },
+  { value: 'te', label: 'Telugu' },
+  { value: 'tr', label: 'Turkish' },
+  { value: 'ta', label: 'Tamil' },
+  { value: 'vi', label: 'Vietnamese' },
+  { value: 'ko', label: 'Korean' },
+  { value: 'it', label: 'Italian' },
 ] as const;
 
 export const STORY_LENGTHS = [

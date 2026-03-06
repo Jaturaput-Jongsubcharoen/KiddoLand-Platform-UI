@@ -5,9 +5,17 @@ import { useApp } from "../context/AppContext";
 import { UnifiedStoryInput } from "../components/story-creation/UnifiedStoryInput";
 import { StoryPreviewPanel } from "../components/story-creation/StoryPreviewPanel";
 import { generateStorySample, saveFavoriteStory } from "../utils/aiApi";
+import {
+  ageFromBand,
+  buildDetectedSummary,
+  cleanTranscript,
+  extractStoryInfo,
+  getLanguageLabel,
+} from "../utils/nlp";
 
 export const CreateStoryUnifiedPage: React.FC = () => {
   const { appState } = useApp();
+  const mode = appState.selectedMode ?? "home";
 
   // Input state - NO personal data stored
   const [textPrompt, setTextPrompt] = useState("");
@@ -16,6 +24,8 @@ export const CreateStoryUnifiedPage: React.FC = () => {
   const [imageAnalysis, setImageAnalysis] = useState<string | null>(null);
   
   // Story preferences (session-only)
+  const [childName, setChildName] = useState("");
+  const [exactAge, setExactAge] = useState<number | null>(null);
   const [ageBand, setAgeBand] = useState<number | null>(null);
   const [interests, setInterests] = useState<string[]>([]);
   const [tone, setTone] = useState("");
@@ -24,6 +34,8 @@ export const CreateStoryUnifiedPage: React.FC = () => {
   const [storyLength, setStoryLength] = useState<"short" | "medium" | "long">("medium");
   const [currentMood, setCurrentMood] = useState("");
   const [language, setLanguage] = useState("en");
+
+  const [detectedSummary, setDetectedSummary] = useState("");
 
   // Generated story state
   const [generatedStory, setGeneratedStory] = useState("");
@@ -36,70 +48,162 @@ export const CreateStoryUnifiedPage: React.FC = () => {
   const [favoriteMessage, setFavoriteMessage] = useState("");
   const [isFavoriteSaved, setIsFavoriteSaved] = useState(false);
 
-  const buildCombinedPrompt = (): string => {
-    let prompt = textPrompt.trim();
+  const buildCombinedPrompt = (overrides?: {
+    childName?: string;
+    age?: number | null;
+    language?: string;
+  }): string => {
+    const basePrompt = [textPrompt.trim(), voiceTranscription?.trim()]
+      .filter(Boolean)
+      .join(" ");
 
-    // Add voice transcription
-    if (voiceTranscription) {
-      prompt += ` ${voiceTranscription}`;
-    }
+    let prompt = basePrompt;
 
-    // Add image context
     if (imageAnalysis) {
-      prompt = `Based on this image showing ${imageAnalysis}, ${prompt}`;
+      prompt = `Based on this image showing ${imageAnalysis}, ${prompt || "create a story"}`;
     }
 
-    // Add age band
-    if (ageBand) {
-      const ageBandLabels: { [key: number]: string } = {
-        1: "1-2 year old toddler",
-        3: "3-4 year old preschooler",
-        5: "5-6 year old kindergartener",
-        7: "7-8 year old early elementary student",
-        9: "9-10 year old elementary student",
-        11: "11-12 year old middle schooler",
-      };
-      prompt += ` for a ${ageBandLabels[ageBand]}`;
+    const effectiveName = overrides?.childName ?? childName.trim();
+    const effectiveAge = overrides?.age ?? exactAge ?? ageFromBand(ageBand);
+
+    if (mode === "home" && (effectiveName || effectiveAge)) {
+      const parts: string[] = [];
+      if (effectiveName) parts.push(`for ${effectiveName}`);
+      if (effectiveAge) parts.push(`age ${effectiveAge}`);
+      if (parts.length > 0) {
+        prompt += `${prompt ? ". " : ""}This story is ${parts.join(", ")}.`;
+      }
     }
 
-    // Add interests
+    if (mode === "institution" && effectiveAge) {
+      prompt += `${prompt ? ". " : ""}This story is for students age ${effectiveAge}.`;
+    }
+
     if (interests.length > 0) {
-      prompt += ` with themes of ${interests.join(", ")}`;
+      prompt += `${prompt ? " " : ""}Include themes of ${interests.join(", ")}.`;
     }
 
-    // Add tone
     if (tone) {
-      prompt += `. Make it ${tone.toLowerCase()}`;
+      prompt += `${prompt ? " " : ""}Make it ${tone.toLowerCase()}.`;
     }
 
-    // Add story type
     if (storyType) {
-      prompt += `. Story type: ${storyType}`;
+      prompt += `${prompt ? " " : ""}Story type: ${storyType}.`;
     }
 
-    // Add learning goal
     if (learningGoal && learningGoal !== "Just for fun") {
-      prompt += `. Focus on teaching: ${learningGoal}`;
+      prompt += `${prompt ? " " : ""}Focus on teaching: ${learningGoal}.`;
     }
 
-    // Add current mood
     if (currentMood) {
-      prompt += `. The child is feeling ${currentMood.toLowerCase()} right now`;
+      prompt += `${prompt ? " " : ""}The child is feeling ${currentMood.toLowerCase()} right now.`;
     }
 
-    // Add story length
     const lengthMap = {
-      short: "Keep it short (2-3 minutes)",
-      medium: "Make it medium length (5 minutes)",
-      long: "Make it a longer story (8-10 minutes)",
+      short: "Keep it short (2-3 minutes).",
+      medium: "Make it medium length (5 minutes).",
+      long: "Make it a longer story (8-10 minutes).",
     };
-    prompt += `. ${lengthMap[storyLength]}.`;
+    prompt += `${prompt ? " " : ""}${lengthMap[storyLength]}`;
 
-    return prompt;
+    const languageToUse = overrides?.language ?? language;
+    if (languageToUse && languageToUse !== "en") {
+      const label = getLanguageLabel(languageToUse);
+      prompt += `${prompt ? " " : ""}Write the story in ${label}.`;
+    }
+
+    return prompt.trim();
+  };
+
+  const applyExtraction = (extracted: ReturnType<typeof extractStoryInfo>) => {
+    if (mode === "home" && extracted.childName && !childName) {
+      setChildName(extracted.childName);
+    }
+
+    if (extracted.age && !ageBand && !exactAge) {
+      setExactAge(extracted.age);
+    }
+
+    if (extracted.ageBand && !ageBand) {
+      setAgeBand(extracted.ageBand);
+    }
+
+    if (extracted.interests.length > 0) {
+      setInterests((prev) => Array.from(new Set([...prev, ...extracted.interests])));
+    }
+
+    if (extracted.tone && !tone) {
+      setTone(extracted.tone);
+    }
+
+    if (extracted.learningGoal && learningGoal === "Just for fun") {
+      setLearningGoal(extracted.learningGoal);
+    }
+
+    if (extracted.storyType && !storyType) {
+      setStoryType(extracted.storyType);
+    }
+
+    if (extracted.currentMood && !currentMood) {
+      setCurrentMood(extracted.currentMood);
+    }
+
+    if (extracted.storyLength && storyLength === "medium") {
+      setStoryLength(extracted.storyLength);
+    }
+
+    if (extracted.language && language === "en") {
+      setLanguage(extracted.language);
+    }
+  };
+
+  const handleVoiceTranscription = (transcription: string | null) => {
+    if (!transcription) {
+      setVoiceTranscription(null);
+      setDetectedSummary("");
+      return;
+    }
+
+    const cleaned = cleanTranscript(transcription);
+    setVoiceTranscription(cleaned);
+
+    if (!cleaned) {
+      setDetectedSummary("");
+      return;
+    }
+
+    const extracted = extractStoryInfo(cleaned, mode);
+    setDetectedSummary(buildDetectedSummary(extracted, mode));
+    applyExtraction(extracted);
+  };
+
+  const handleAgeBandChange = (age: number | null) => {
+    setAgeBand(age);
+    if (age !== null) {
+      setExactAge(null);
+    }
   };
 
   const handleGenerate = async () => {
-    const combinedPrompt = buildCombinedPrompt();
+    const combinedInput = [textPrompt.trim(), voiceTranscription?.trim()]
+      .filter(Boolean)
+      .join(" ");
+
+    const extracted = combinedInput ? extractStoryInfo(combinedInput, mode) : null;
+    if (extracted) {
+      applyExtraction(extracted);
+    }
+
+    const effectiveChildName =
+      mode === "home" ? childName.trim() || extracted?.childName || "Kiddo" : "";
+    const effectiveAge = exactAge ?? extracted?.age ?? ageFromBand(ageBand) ?? 7;
+    const effectiveLanguage = language !== "en" ? language : extracted?.language ?? language;
+
+    const combinedPrompt = buildCombinedPrompt({
+      childName: effectiveChildName,
+      age: effectiveAge,
+      language: effectiveLanguage,
+    });
 
     if (!combinedPrompt || combinedPrompt.length < 10) {
       setErrorMessage("Please enter more details about the story you'd like.");
@@ -155,13 +259,20 @@ export const CreateStoryUnifiedPage: React.FC = () => {
       setErrorMessage("");
       setFavoriteMessage("");
       
-      // Use ageBand if set, otherwise default to 7 (general audience)
-      const ageToUse = ageBand || 7;
+      const combinedInput = [textPrompt.trim(), voiceTranscription?.trim()]
+        .filter(Boolean)
+        .join(" ");
+      const extracted = combinedInput ? extractStoryInfo(combinedInput, mode) : null;
+      const effectiveAge = exactAge ?? extracted?.age ?? ageFromBand(ageBand) ?? 7;
       
       const response = await saveFavoriteStory(
-        buildCombinedPrompt(),
+        buildCombinedPrompt({
+          childName: mode === "home" ? childName.trim() || extracted?.childName || "Kiddo" : "",
+          age: effectiveAge,
+          language: language !== "en" ? language : extracted?.language ?? language,
+        }),
         storyToSave,
-        ageToUse,
+        effectiveAge,
         appState.accessToken
       );
       if (response.saved) {
@@ -194,16 +305,19 @@ export const CreateStoryUnifiedPage: React.FC = () => {
       <Stack spacing={3}>
         {/* Main Input Component */}
         <UnifiedStoryInput
+          mode={mode}
+          childName={childName}
+          setChildName={setChildName}
           textPrompt={textPrompt}
           setTextPrompt={setTextPrompt}
           voiceTranscription={voiceTranscription}
-          setVoiceTranscription={setVoiceTranscription}
+          setVoiceTranscription={handleVoiceTranscription}
           uploadedImage={uploadedImage}
           imageAnalysis={imageAnalysis}
           handleImageUpload={handleImageUpload}
           handleImageRemove={handleImageRemove}
           ageBand={ageBand}
-          setAgeBand={setAgeBand}
+          setAgeBand={handleAgeBandChange}
           interests={interests}
           setInterests={setInterests}
           tone={tone}
@@ -218,6 +332,7 @@ export const CreateStoryUnifiedPage: React.FC = () => {
           setCurrentMood={setCurrentMood}
           language={language}
           setLanguage={setLanguage}
+          detectedSummary={detectedSummary}
           onGenerate={handleGenerate}
           isGenerating={isGenerating}
           errorMessage={errorMessage}
