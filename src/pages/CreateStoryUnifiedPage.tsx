@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Stack } from "@mui/material";
+import { Box, Stack } from "@mui/material";
 import { AppShellLayout } from "../components";
 import { useApp } from "../context/AppContext";
 import { UnifiedStoryInput } from "../components/story-creation/UnifiedStoryInput";
@@ -12,6 +12,7 @@ import {
   extractStoryInfo,
   getLanguageLabel,
 } from "../utils/nlp";
+import BackButton from "../components/BackButton";
 
 export const CreateStoryUnifiedPage: React.FC = () => {
   const { appState } = useApp();
@@ -303,6 +304,9 @@ export const CreateStoryUnifiedPage: React.FC = () => {
   return (
     <AppShellLayout>
       <Stack spacing={3}>
+        <Box>
+          <BackButton to="/home" />
+        </Box>
         {/* Main Input Component */}
         <UnifiedStoryInput
           mode={mode}

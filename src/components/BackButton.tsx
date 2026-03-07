@@ -3,12 +3,16 @@ import { KiddoButton } from '.';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const BackButton: React.FC = () => {
+interface BackButtonProps {
+  to?: number | string;
+}
+
+const BackButton: React.FC<BackButtonProps> = ({ to = -1 }) => {
   const navigate = useNavigate();
   return (
     <KiddoButton
       variant="outlined"
-      onClick={() => navigate(-1)}
+      onClick={() => navigate(to)}
       startIcon={<ArrowLeft size={18} />}
       sx={{
         color: '#2563eb',

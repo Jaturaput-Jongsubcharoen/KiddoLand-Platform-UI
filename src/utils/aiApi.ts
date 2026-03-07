@@ -2,6 +2,10 @@ interface AiSampleResponse {
   output: string;
 }
 
+interface RhymeGenerateResponse {
+  story: string;
+}
+
 export interface StoryHistoryItem {
   id: string;
   user_id: string;
@@ -70,6 +74,46 @@ export const generateStorySample = async (
     }
 
     throw new Error(backendMessage || 'Unable to generate a story right now.');
+  }
+
+  return response.json();
+};
+
+export const generateRhyme = async (
+  prompt: string,
+  age: number,
+  accessToken: string
+): Promise<RhymeGenerateResponse> => {
+  const apiBaseUrl = resolveApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/story/generate-rhyme`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ prompt, age }),
+  });
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({}));
+    const backendMessage = typeof errorPayload?.detail === 'string' ? errorPayload.detail : '';
+
+    if (response.status === 400) {
+      throw new Error(
+        backendMessage ||
+          'Please include a child name and an age between 1 and 10.'
+      );
+    }
+
+    if (response.status === 401) {
+      throw new Error('Your session has expired. Please sign in again.');
+    }
+
+    if (response.status >= 500) {
+      throw new Error('Server is unavailable right now. Please try again shortly.');
+    }
+
+    throw new Error(backendMessage || 'Unable to generate a rhyme right now.');
   }
 
   return response.json();
