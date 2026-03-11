@@ -10,7 +10,7 @@ import {
   Divider,
 } from "@mui/material";
 import { User, Home, School, LogOut } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { SharedNavBar } from "./SharedNavBar";
 
@@ -24,7 +24,9 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
   showNav = true,
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { appState, logout } = useApp();
+  const isAuthRoute = location.pathname.startsWith('/auth') || location.pathname === '/';
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   const isHomeMode = appState.selectedMode === "home";
@@ -91,7 +93,7 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
                 gap: 2,
               }}
             >
-              {appState.isAuthenticated && (
+              {appState.isAuthenticated && !isAuthRoute && (
                 <>
                   {/* NAV BUTTONS (Desktop Only) */}
                   <Box
