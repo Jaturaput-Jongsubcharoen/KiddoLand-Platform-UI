@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Box,
   Stack,
@@ -14,6 +14,7 @@ import { QuickStarterChips } from "./QuickStarterChips";
 import { VoiceInputButton } from "./VoiceInputButton";
 import { ImageUploadButton } from "./ImageUploadButton";
 import { AdvancedOptionsPanel } from "./AdvancedOptionsPanel";
+import type { ImageAttachment } from "../../types/storyOptions";
 
 interface UnifiedStoryInputProps {
   mode: "home" | "institution" | null;
@@ -23,10 +24,13 @@ interface UnifiedStoryInputProps {
   setTextPrompt: (prompt: string) => void;
   voiceTranscription: string | null;
   setVoiceTranscription: (transcription: string | null) => void;
-  uploadedImage: File | null;
+  uploadedImages: ImageAttachment[];
   imageAnalysis: string | null;
-  handleImageUpload: (file: File, analysis: string) => void;
-  handleImageRemove: () => void;
+  imageError?: string;
+  onAddImages: (files: File[]) => void;
+  onRemoveImage: (id: string) => void;
+  onReplaceImage: (id: string, file: File) => void;
+  isProcessingImages?: boolean;
   ageBand: number | null;
   setAgeBand: (age: number | null) => void;
   interests: string[];
@@ -58,10 +62,13 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
   setTextPrompt,
   voiceTranscription,
   setVoiceTranscription,
-  uploadedImage,
+  uploadedImages,
   imageAnalysis,
-  handleImageUpload,
-  handleImageRemove,
+  imageError,
+  onAddImages,
+  onRemoveImage,
+  onReplaceImage,
+  isProcessingImages = false,
   ageBand,
   setAgeBand,
   interests,
@@ -85,6 +92,8 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
   hasExistingStory,
 }) => {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
 
   const handleTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setTextPrompt(event.target.value);
@@ -100,11 +109,25 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
     }
   };
 
+  const handleReplaceClick = (id: string) => {
+    setReplaceTargetId(id);
+    replaceInputRef.current?.click();
+  };
+
+  const handleReplaceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && replaceTargetId) {
+      onReplaceImage(replaceTargetId, file);
+    }
+    event.target.value = "";
+    setReplaceTargetId(null);
+  };
+
   // User can generate with any input - age band is completely optional
   const hasAnyInput = 
     textPrompt.trim() || 
     voiceTranscription || 
-    uploadedImage || 
+    uploadedImages.length > 0 || 
     interests.length > 0 || 
     tone || 
     storyType || 
@@ -256,12 +279,109 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
             currentTranscription={voiceTranscription}
           />
           <ImageUploadButton
-            onUpload={handleImageUpload}
-            onRemove={handleImageRemove}
-            uploadedImage={uploadedImage}
-            imageAnalysis={imageAnalysis}
+            onAddImages={onAddImages}
+            imagesCount={uploadedImages.length}
+            isProcessing={isProcessingImages}
           />
         </Stack>
+
+        {imageError && uploadedImages.length === 0 && (
+          <Alert severity="error">{imageError}</Alert>
+        )}
+
+        {/* Image Preview Thumbnails */}
+        {uploadedImages.length > 0 && (
+          <Box>
+            {imageError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {imageError}
+              </Alert>
+            )}
+            <Stack spacing={2}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#FF6B35" }}>
+                🖼️ Image Preview
+              </Typography>
+              <Stack direction="row" spacing={2} sx={{ overflowX: "auto", pb: 1 }}>
+                {uploadedImages.map((image) => (
+                  <Box
+                    key={image.id}
+                    sx={{
+                      minWidth: 180,
+                      maxWidth: 220,
+                      p: 1.5,
+                      borderRadius: 2,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      backgroundColor: "rgba(255,255,255,0.9)",
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={image.previewUrl}
+                      alt={image.caption}
+                      sx={{
+                        width: "100%",
+                        height: 120,
+                        objectFit: "cover",
+                        borderRadius: 1.5,
+                        mb: 1,
+                      }}
+                    />
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                      {image.caption}
+                    </Typography>
+                    <Stack direction="row" spacing={1}>
+                      <KiddoButton
+                        variant="outlined"
+                        size="small"
+                        onClick={() => onRemoveImage(image.id)}
+                        sx={{
+                          color: "#1F2937",
+                          borderColor: "rgba(31,41,55,0.25)",
+                          backgroundColor: "rgba(255,255,255,0.85)",
+                          "&:hover": {
+                            backgroundColor: "rgba(255,255,255,1)",
+                            borderColor: "rgba(31,41,55,0.4)",
+                          },
+                        }}
+                      >
+                        Remove Image
+                      </KiddoButton>
+                      <KiddoButton
+                        variant="outlined"
+                        size="small"
+                        onClick={() => handleReplaceClick(image.id)}
+                        sx={{
+                          color: "#1F2937",
+                          borderColor: "rgba(31,41,55,0.25)",
+                          backgroundColor: "rgba(255,255,255,0.85)",
+                          "&:hover": {
+                            backgroundColor: "rgba(255,255,255,1)",
+                            borderColor: "rgba(31,41,55,0.4)",
+                          },
+                        }}
+                      >
+                        Replace Image
+                      </KiddoButton>
+                    </Stack>
+                  </Box>
+                ))}
+              </Stack>
+              {imageAnalysis && (
+                <Typography variant="body2" color="text.secondary">
+                  Image context: {imageAnalysis}
+                </Typography>
+              )}
+            </Stack>
+            <input
+              ref={replaceInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleReplaceChange}
+              style={{ display: "none" }}
+            />
+          </Box>
+        )}
 
         {/* Voice Transcription Display */}
         {voiceTranscription && (
@@ -282,23 +402,6 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
                 Detected: {detectedSummary}
               </Typography>
             )}
-          </Alert>
-        )}
-
-        {/* Image Analysis Display */}
-        {imageAnalysis && (
-          <Alert 
-            severity="info" 
-            onClose={handleImageRemove}
-            sx={{
-              background: 'linear-gradient(135deg, rgba(255,107,53,0.15), rgba(247,147,30,0.15))',
-              borderLeft: '4px solid #FF6B35',
-            }}
-          >
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, color: '#FF6B35' }}>
-              🖼️ Image Detected:
-            </Typography>
-            <Typography variant="body2">{imageAnalysis}</Typography>
           </Alert>
         )}
 
@@ -341,3 +444,4 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
     </KiddoCard>
   );
 };
+

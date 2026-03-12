@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { Box, Stack } from "@mui/material";
 import { AppShellLayout } from "../components";
 import { useApp } from "../context/AppContext";
@@ -12,6 +12,8 @@ import {
   extractStoryInfo,
   getLanguageLabel,
 } from "../utils/nlp";
+import { buildImageContext, processImageFiles } from "../utils/imageProcessing";
+import type { ImageAttachment } from "../types/storyOptions";
 import BackButton from "../components/BackButton";
 
 export const CreateStoryUnifiedPage: React.FC = () => {
@@ -21,8 +23,9 @@ export const CreateStoryUnifiedPage: React.FC = () => {
   // Input state - NO personal data stored
   const [textPrompt, setTextPrompt] = useState("");
   const [voiceTranscription, setVoiceTranscription] = useState<string | null>(null);
-  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
-  const [imageAnalysis, setImageAnalysis] = useState<string | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<ImageAttachment[]>([]);
+  const [imageError, setImageError] = useState("");
+  const [isProcessingImages, setIsProcessingImages] = useState(false);
   
   // Story preferences (session-only)
   const [childName, setChildName] = useState("");
@@ -48,6 +51,12 @@ export const CreateStoryUnifiedPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [favoriteMessage, setFavoriteMessage] = useState("");
   const [isFavoriteSaved, setIsFavoriteSaved] = useState(false);
+  const lastImagePromptRef = useRef("");
+
+  const imageAnalysis = useMemo(
+    () => (uploadedImages.length ? buildImageContext(uploadedImages) : ""),
+    [uploadedImages]
+  );
 
   const buildCombinedPrompt = (overrides?: {
     childName?: string;
@@ -59,10 +68,6 @@ export const CreateStoryUnifiedPage: React.FC = () => {
       .join(" ");
 
     let prompt = basePrompt;
-
-    if (imageAnalysis) {
-      prompt = `Based on this image showing ${imageAnalysis}, ${prompt || "create a story"}`;
-    }
 
     const effectiveName = overrides?.childName ?? childName.trim();
     const effectiveAge = overrides?.age ?? exactAge ?? ageFromBand(ageBand);
@@ -291,14 +296,89 @@ export const CreateStoryUnifiedPage: React.FC = () => {
     }
   };
 
-  const handleImageUpload = (file: File, analysis: string) => {
-    setUploadedImage(file);
-    setImageAnalysis(analysis);
+  const buildImagePromptSentence = (context: string) =>
+    `Create a fun children's story inspired by ${context}.`;
+
+  const upsertImageContext = (nextContext: string) => {
+    const nextSentence = nextContext ? buildImagePromptSentence(nextContext) : "";
+
+    setTextPrompt((prev) => {
+      let next = prev.trimEnd();
+
+      if (lastImagePromptRef.current && next.includes(lastImagePromptRef.current)) {
+        next = next.replace(lastImagePromptRef.current, "").trimEnd();
+      }
+
+      if (nextSentence) {
+        const separator = next ? "\n\n" : "";
+        next = `${next}${separator}${nextSentence}`;
+        lastImagePromptRef.current = nextSentence;
+      } else {
+        lastImagePromptRef.current = "";
+      }
+
+      return next;
+    });
   };
 
-  const handleImageRemove = () => {
-    setUploadedImage(null);
-    setImageAnalysis(null);
+  const handleAddImages = async (files: File[]) => {
+    if (!files.length) return;
+    setIsProcessingImages(true);
+    setImageError("");
+    try {
+      const attachments = await processImageFiles(files);
+      setUploadedImages((prev) => {
+        const next = [...prev, ...attachments];
+        upsertImageContext(buildImageContext(next));
+        return next;
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to process image. Please try again.";
+      setImageError(message);
+    } finally {
+      setIsProcessingImages(false);
+    }
+  };
+
+  const handleRemoveImage = (id: string) => {
+    setImageError("");
+    setUploadedImages((prev) => {
+      const target = prev.find((image) => image.id === id);
+      if (target) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      const next = prev.filter((image) => image.id !== id);
+      upsertImageContext(buildImageContext(next));
+      return next;
+    });
+  };
+
+  const handleReplaceImage = async (id: string, file: File) => {
+    setIsProcessingImages(true);
+    setImageError("");
+    try {
+      const [replacement] = await processImageFiles([file]);
+      setUploadedImages((prev) => {
+        const next = prev.map((image) => {
+          if (image.id !== id) return image;
+          URL.revokeObjectURL(image.previewUrl);
+          return replacement;
+        });
+        upsertImageContext(buildImageContext(next));
+        return next;
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to process image. Please try again.";
+      setImageError(message);
+    } finally {
+      setIsProcessingImages(false);
+    }
   };
 
   return (
@@ -316,10 +396,13 @@ export const CreateStoryUnifiedPage: React.FC = () => {
           setTextPrompt={setTextPrompt}
           voiceTranscription={voiceTranscription}
           setVoiceTranscription={handleVoiceTranscription}
-          uploadedImage={uploadedImage}
+          uploadedImages={uploadedImages}
           imageAnalysis={imageAnalysis}
-          handleImageUpload={handleImageUpload}
-          handleImageRemove={handleImageRemove}
+          imageError={imageError}
+          onAddImages={handleAddImages}
+          onRemoveImage={handleRemoveImage}
+          onReplaceImage={handleReplaceImage}
+          isProcessingImages={isProcessingImages}
           ageBand={ageBand}
           setAgeBand={handleAgeBandChange}
           interests={interests}
