@@ -20,13 +20,13 @@ export const SharedNavBar: React.FC = () => {
       </KiddoButton>
       <KiddoButton
         variant={isHistory ? 'contained' : 'outlined'}
-        onClick={() => navigate('/home/story-history')}
+        onClick={() => navigate('/story-history')}
       >
         History
       </KiddoButton>
       <KiddoButton
         variant={isFavorite ? 'contained' : 'outlined'}
-        onClick={() => navigate('/home/story-favorites')}
+        onClick={() => navigate('/story-favorites')}
       >
         Favourite
       </KiddoButton>

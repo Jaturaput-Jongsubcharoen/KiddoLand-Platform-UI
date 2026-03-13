@@ -65,7 +65,7 @@ const App: React.FC = () => {
               }
             />
             <Route
-              path="/home/story-history"
+              path="/story-history"
               element={
                 <ProtectedRoute requireMode="home">
                   <StoryHistoryPage />
@@ -73,7 +73,7 @@ const App: React.FC = () => {
               }
             />
             <Route
-              path="/home/story-favorites"
+              path="/story-favorites"
               element={
                 <ProtectedRoute requireMode="home">
                   <StoryFavoritesPage />
