@@ -1,121 +1,90 @@
-import React, { useState, useRef } from "react";
-import { Box, Button, CircularProgress, Tooltip, Avatar } from "@mui/material";
-import { Image, Camera, Check, X } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Button, CircularProgress, Menu, MenuItem, Tooltip } from "@mui/material";
+import { Camera, Check, Image as ImageIcon, Upload } from "lucide-react";
 
 interface ImageUploadButtonProps {
-  onUpload: (file: File, analysis: string) => void;
-  onRemove: () => void;
-  uploadedImage: File | null;
-  imageAnalysis: string | null;
+  onAddImages: (files: File[]) => void;
+  imagesCount: number;
+  isProcessing?: boolean;
 }
 
 export const ImageUploadButton: React.FC<ImageUploadButtonProps> = ({
-  onUpload,
-  onRemove,
-  uploadedImage,
-  imageAnalysis,
+  onAddImages,
+  imagesCount,
+  isProcessing = false,
 }) => {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  const analyzeImage = async (file: File): Promise<string> => {
-    // Simulate AI image analysis
-    // In production, this would call your AI vision API (GPT-4 Vision, Claude Vision, etc.)
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Mock analysis based on file name or random elements
-        const elements = [
-          "a colorful toy",
-          "a cute drawing",
-          "a stuffed animal",
-          "an artistic creation",
-          "a creative picture",
-        ];
-        const colors = ["bright colors", "blue and green", "rainbow colors", "soft pastels"];
-        const moods = ["cheerful", "playful", "imaginative", "whimsical"];
-
-        const randomElement = elements[Math.floor(Math.random() * elements.length)];
-        const randomColor = colors[Math.floor(Math.random() * colors.length)];
-        const randomMood = moods[Math.floor(Math.random() * moods.length)];
-
-        resolve(`${randomElement} with ${randomColor}, ${randomMood} style`);
-      }, 2000);
-    });
+  const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setMenuAnchor(event.currentTarget);
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file (JPG, PNG, etc.)");
-      return;
-    }
-
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert("Image size must be less than 10MB");
-      return;
-    }
-
-    setIsAnalyzing(true);
-    try {
-      const analysis = await analyzeImage(file);
-      onUpload(file, analysis);
-    } catch (error) {
-      console.error("Image analysis failed:", error);
-      alert("Failed to analyze image. Please try again.");
-    } finally {
-      setIsAnalyzing(false);
-    }
-
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
   };
 
-  const handleClick = () => {
-    if (uploadedImage) {
-      onRemove();
-    } else {
-      fileInputRef.current?.click();
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length) {
+      onAddImages(files);
     }
+    event.target.value = "";
+    handleMenuClose();
   };
 
-  const buttonColor = uploadedImage ? "success.main" : "primary.main";
-  const buttonLabel = isAnalyzing
+  const handleTakePhoto = () => {
+    handleMenuClose();
+    cameraInputRef.current?.click();
+  };
+
+  const handleUploadImage = () => {
+    handleMenuClose();
+    uploadInputRef.current?.click();
+  };
+
+  const buttonColor = imagesCount > 0 ? "success.main" : "primary.main";
+  const buttonLabel = isProcessing
     ? "Analyzing..."
-    : uploadedImage
-    ? "Image Added ✓"
+    : imagesCount > 0
+    ? "Images Added ✓"
     : "Add Image";
 
-  const tooltipText = isAnalyzing
-    ? "Analyzing your image..."
-    : uploadedImage
-    ? "Click to remove and upload a different image"
-    : "Upload or capture an image to inspire the story";
+  const tooltipText = isProcessing
+    ? "Analyzing your images..."
+    : imagesCount > 0
+    ? "Add more images or replace existing ones below"
+    : "Upload or capture images to inspire the story";
 
   return (
     <>
       <input
-        ref={fileInputRef}
+        ref={cameraInputRef}
         type="file"
         accept="image/*"
         capture="environment"
+        multiple
         onChange={handleFileChange}
         style={{ display: "none" }}
       />
-      
+      <input
+        ref={uploadInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleFileChange}
+        style={{ display: "none" }}
+      />
+
       <Tooltip title={tooltipText}>
         <Button
-          onClick={handleClick}
-          disabled={isAnalyzing}
+          onClick={handleMenuOpen}
+          disabled={isProcessing}
           startIcon={
-            isAnalyzing ? (
+            isProcessing ? (
               <CircularProgress size={18} />
-            ) : uploadedImage ? (
+            ) : imagesCount > 0 ? (
               <Check size={18} />
             ) : (
               <Camera size={18} />
@@ -145,6 +114,21 @@ export const ImageUploadButton: React.FC<ImageUploadButtonProps> = ({
           {buttonLabel}
         </Button>
       </Tooltip>
+
+      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={handleMenuClose}>
+        <MenuItem onClick={handleTakePhoto}>
+          <Camera size={16} style={{ marginRight: 8 }} />
+          Take Photo
+        </MenuItem>
+        <MenuItem onClick={handleUploadImage}>
+          <Upload size={16} style={{ marginRight: 8 }} />
+          Upload Image from Device
+        </MenuItem>
+        <MenuItem onClick={handleMenuClose}>
+          <ImageIcon size={16} style={{ marginRight: 8 }} />
+          Cancel
+        </MenuItem>
+      </Menu>
     </>
   );
 };

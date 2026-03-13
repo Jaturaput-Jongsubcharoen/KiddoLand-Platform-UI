@@ -21,8 +21,19 @@ export interface StoryOptions {
   // User inputs (not stored)
   textPrompt: string;
   voiceTranscription?: string;
-  uploadedImage?: File;
+  uploadedImages?: ImageAttachment[];
   imageAnalysis?: string;
+}
+
+export interface ImageAttachment {
+  id: string;
+  file: File;
+  previewUrl: string;
+  caption: string;
+  objects?: string[];
+  activity?: string;
+  scene?: string;
+  mood?: string;
 }
 
 export const AGE_BANDS = [
