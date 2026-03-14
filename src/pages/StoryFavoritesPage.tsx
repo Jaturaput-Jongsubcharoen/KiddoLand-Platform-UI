@@ -145,7 +145,7 @@ export const StoryFavoritesPage: React.FC = () => {
           </KiddoCard>
         ) : (
           <>
-            <Grid container spacing={3}>
+            <Grid container spacing={3} sx={{ width: "100%" }}>
               {displayedItems.map((item) => (
                 <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
                   <KiddoCard

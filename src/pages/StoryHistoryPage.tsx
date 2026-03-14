@@ -182,7 +182,14 @@ export const StoryHistoryPage: React.FC = () => {
           </KiddoCard>
         ) : (
           <>
-            <Grid container spacing={3}>
+            <Grid
+              container
+              spacing={2}
+              justifyContent="center"
+              sx={{
+                maxWidth: 1400,
+              }}
+            >
               {displayedItems.map((item) => (
                 <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
                   <KiddoCard
