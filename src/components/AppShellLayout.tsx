@@ -171,11 +171,11 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
                       <MenuItem onClick={() => navigate("/home")}>
                         Home
                       </MenuItem>
-                      <MenuItem onClick={() => navigate("/home/story-history")}>
+                      <MenuItem onClick={() => navigate("/story-history")}>
                         History
                       </MenuItem>
                       <MenuItem
-                        onClick={() => navigate("/home/story-favorites")}
+                        onClick={() => navigate("/story-favorites")}
                       >
                         Favourite
                       </MenuItem>
