@@ -7,6 +7,10 @@ import {
   Snackbar,
   IconButton,
   InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  FormHelperText,
 } from '@mui/material';
 import { Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -15,7 +19,7 @@ import {
   KiddoButton,
   AuthLayout,
 } from '../components';
-import { loginWithPassword, getUserProfile } from '../utils/authApi';
+import { loginWithPassword, registerWithPassword, getUserProfile } from '../utils/authApi';
 import {
   validateInstitutionEmail,
   validateName,
@@ -39,6 +43,8 @@ export const AuthInstitutionPage: React.FC = () => {
   const [signUpInstitution, setSignUpInstitution] = useState('');
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpRole, setSignUpRole] = useState('');
+  const [isSigningUp, setIsSigningUp] = useState(false);
+  const [signUpErrorMsg, setSignUpErrorMsg] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
@@ -106,8 +112,10 @@ export const AuthInstitutionPage: React.FC = () => {
     }
   };
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSignUpErrorMsg('');
+
     const errors = { name: '', institution: '', email: '', role: '', password: '', confirmPassword: '' };
 
     const nameValidation = validateName(signUpName);
@@ -126,13 +134,41 @@ export const AuthInstitutionPage: React.FC = () => {
     setSignUpErrors(errors);
     if (Object.values(errors).some((err) => err !== '')) return;
 
-    openSuccessSnackbar();
-    setSignUpName('');
-    setSignUpInstitution('');
-    setSignUpEmail('');
-    setSignUpRole('');
-    setSignUpPassword('');
-    setSignUpConfirmPassword('');
+    // Map frontend role value to backend expected casing
+    const roleMap: Record<string, string> = {
+      teacher: 'Teacher',
+      librarian: 'Librarian',
+      admin: 'Admin',
+    };
+    const selectedRole = roleMap[signUpRole] || signUpRole;
+
+    try {
+      setIsSigningUp(true);
+      const resp = await registerWithPassword({
+        email: signUpEmail,
+        password: signUpPassword,
+        mode: 'institution',
+        role: selectedRole as any,
+      });
+
+      const tokenExpiresAt = Date.now() + resp.expires_in * 1000;
+      // Try fetching profile
+      let userName: string | undefined;
+      try {
+        const profile = await getUserProfile(resp.access_token);
+        userName = profile.full_name || (profile.first_name && profile.last_name ? `${profile.first_name} ${profile.last_name}` : profile.first_name || profile.last_name);
+      } catch (profileErr) {
+        console.warn('Could not fetch profile after register:', profileErr);
+      }
+
+      login(signUpEmail, resp.access_token, resp.role, tokenExpiresAt, userName);
+      navigate('/institution');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to sign up.';
+      setSignUpErrorMsg(message);
+    } finally {
+      setIsSigningUp(false);
+    }
   };
 
   const signInForm = (
@@ -195,6 +231,11 @@ export const AuthInstitutionPage: React.FC = () => {
   const signUpForm = (
     <form onSubmit={handleSignUp}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+        {signUpErrorMsg && (
+          <Alert severity="error" sx={{ borderRadius: 3 }}>
+            {signUpErrorMsg}
+          </Alert>
+        )}
         <TextField
           label="Full Name"
           fullWidth
@@ -223,20 +264,22 @@ export const AuthInstitutionPage: React.FC = () => {
           helperText={signUpErrors.email}
           required
         />
-        <TextField
-          select
-          label="Role"
-          fullWidth
-          value={signUpRole}
-          onChange={(e) => setSignUpRole(e.target.value)}
-          error={!!signUpErrors.role}
-          helperText={signUpErrors.role}
-          required
-        >
-          <MenuItem value="teacher">Teacher</MenuItem>
-          <MenuItem value="librarian">Librarian</MenuItem>
-          <MenuItem value="admin">Admin</MenuItem>
-        </TextField>
+        <FormControl fullWidth required error={!!signUpErrors.role}>
+          <InputLabel id="role-select-label">Role</InputLabel>
+          <Select
+            labelId="role-select-label"
+            id="role-select"
+            value={signUpRole}
+            label="Role"
+            onChange={(e) => setSignUpRole(e.target.value)}
+            MenuProps={{ disableAutoFocusItem: true }}
+          >
+            <MenuItem value="teacher">Teacher</MenuItem>
+            <MenuItem value="librarian">Librarian</MenuItem>
+            <MenuItem value="admin">Admin</MenuItem>
+          </Select>
+          {signUpErrors.role && <FormHelperText>{signUpErrors.role}</FormHelperText>}
+        </FormControl>
         <TextField
           label="Password"
           type={showSignUpPassword ? 'text' : 'password'}
