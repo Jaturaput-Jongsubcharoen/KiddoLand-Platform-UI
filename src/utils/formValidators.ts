@@ -13,45 +13,11 @@ export const validateEmail = (email: string): { isValid: boolean; error?: string
   return { isValid: true };
 };
 
-// Allowed institution email domains
-// Update this list if you want to allow more domains.
-export const ALLOWED_INSTITUTION_DOMAINS = ['school.ca', 'board.ca', 'library.org'];
-export const INSTITUTION_TLDS = ['.edu', '.school', '.k12'];
-
-export const isInstitutionEmailAllowed = (
-  email: string,
-  allowlist: string[] = ALLOWED_INSTITUTION_DOMAINS
-): boolean => {
-  const atIndex = email.lastIndexOf('@');
-  if (atIndex === -1) return false;
-  const domain = email.slice(atIndex + 1).toLowerCase();
-  if (!domain) return false;
-
-  if (INSTITUTION_TLDS.some((tld) => domain.endsWith(tld))) {
-    return true;
-  }
-
-  return allowlist.some((allowed) => domain.endsWith(allowed.toLowerCase()));
-};
-
+// For Institution Mode, allow any valid email address.
 export const validateInstitutionEmail = (
   email: string
 ): { isValid: boolean; error?: string } => {
-  const basicValidation = validateEmail(email);
-  if (!basicValidation.isValid) {
-    return basicValidation;
-  }
-
-  const isAllowed = isInstitutionEmailAllowed(email);
-  if (!isAllowed) {
-    return {
-      isValid: false,
-      error:
-        'Institution Mode is for teachers/librarians. Please use an approved school/library email or switch to Home Mode.',
-    };
-  }
-
-  return { isValid: true };
+  return validateEmail(email);
 };
 
 export const validatePassword = (
