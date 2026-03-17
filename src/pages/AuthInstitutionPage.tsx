@@ -21,6 +21,11 @@ import {
 } from '../components';
 import { loginWithPassword, registerWithPassword, getUserProfile } from '../utils/authApi';
 import {
+  resolveNameFromAuthResponse,
+  resolveNameFromProfile,
+  fallbackNameFromEmail,
+} from '../utils/userName';
+import {
   validateInstitutionEmail,
   validateName,
   validatePassword,
@@ -88,21 +93,25 @@ export const AuthInstitutionPage: React.FC = () => {
         mode: 'institution',
       });
       const tokenExpiresAt = Date.now() + response.expires_in * 1000;
-      
+
+      let userName = resolveNameFromAuthResponse(response);
       // Try to get user profile to fetch their name
-      let userName: string | undefined;
       try {
         const profile = await getUserProfile(response.access_token);
-        userName = profile.full_name || 
-                   (profile.first_name && profile.last_name 
-                     ? `${profile.first_name} ${profile.last_name}` 
-                     : profile.first_name || profile.last_name);
+        const profileName = resolveNameFromProfile(profile);
+        if (!userName && profileName) {
+          userName = profileName;
+        }
       } catch (profileError) {
         console.warn('Could not fetch user profile:', profileError);
         // Continue with login even if profile fetch fails
       }
-      
-      login(signInEmail, response.access_token, response.role, tokenExpiresAt, userName);
+
+      const emailForFallback = response.email || signInEmail;
+      const fallbackName = fallbackNameFromEmail(emailForFallback);
+      const finalUserName = (userName && userName.trim()) || fallbackName;
+
+      login(signInEmail, response.access_token, response.role, tokenExpiresAt, finalUserName);
       navigate('/institution');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to sign in.';
@@ -146,6 +155,7 @@ export const AuthInstitutionPage: React.FC = () => {
       setIsSigningUp(true);
       const resp = await registerWithPassword({
         email: signUpEmail,
+        name: signUpName,
         password: signUpPassword,
         mode: 'institution',
         role: selectedRole as any,
@@ -153,15 +163,23 @@ export const AuthInstitutionPage: React.FC = () => {
 
       const tokenExpiresAt = Date.now() + resp.expires_in * 1000;
       // Try fetching profile
-      let userName: string | undefined;
+      const responseName = resolveNameFromAuthResponse(resp);
+      let userName = responseName || signUpName;
       try {
         const profile = await getUserProfile(resp.access_token);
-        userName = profile.full_name || (profile.first_name && profile.last_name ? `${profile.first_name} ${profile.last_name}` : profile.first_name || profile.last_name);
+        const profileName = resolveNameFromProfile(profile);
+        if (!userName && profileName) {
+          userName = profileName;
+        }
       } catch (profileErr) {
         console.warn('Could not fetch profile after register:', profileErr);
       }
 
-      login(signUpEmail, resp.access_token, resp.role, tokenExpiresAt, userName);
+      const emailForFallback = resp.email || signUpEmail;
+      const fallbackName = fallbackNameFromEmail(emailForFallback);
+      const finalUserName = (userName && userName.trim()) || fallbackName;
+
+      login(signUpEmail, resp.access_token, resp.role, tokenExpiresAt, finalUserName);
       navigate('/institution');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to sign up.';
