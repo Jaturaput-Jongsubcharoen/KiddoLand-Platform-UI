@@ -14,6 +14,11 @@ import { useApp } from '../context/AppContext';
 import { KiddoButton, AuthLayout } from '../components';
 import { loginWithPassword, registerWithPassword, getUserProfile } from '../utils/authApi';
 import {
+  resolveNameFromAuthResponse,
+  resolveNameFromProfile,
+  fallbackNameFromEmail,
+} from '../utils/userName';
+import {
   validateEmail,
   validatePassword,
   validateConfirmPassword,
@@ -77,21 +82,25 @@ export const AuthHomePage: React.FC = () => {
         mode: 'home',
       });
       const tokenExpiresAt = Date.now() + response.expires_in * 1000;
-      
+
+      let userName = resolveNameFromAuthResponse(response);
       // Try to get user profile to fetch their name
-      let userName: string | undefined;
       try {
         const profile = await getUserProfile(response.access_token);
-        userName = profile.full_name || 
-                   (profile.first_name && profile.last_name 
-                     ? `${profile.first_name} ${profile.last_name}` 
-                     : profile.first_name || profile.last_name);
+        const profileName = resolveNameFromProfile(profile);
+        if (!userName && profileName) {
+          userName = profileName;
+        }
       } catch (profileError) {
         console.warn('Could not fetch user profile:', profileError);
         // Continue with login even if profile fetch fails
       }
-      
-      login(signInEmail, response.access_token, response.role, tokenExpiresAt, userName);
+
+      const emailForFallback = response.email || signInEmail;
+      const fallbackName = fallbackNameFromEmail(emailForFallback);
+      const finalUserName = (userName && userName.trim()) || fallbackName;
+
+      login(signInEmail, response.access_token, response.role, tokenExpiresAt, finalUserName);
       localStorage.setItem('accessToken', response.access_token);
       navigate('/home');
     } catch (error) {
@@ -130,12 +139,19 @@ export const AuthHomePage: React.FC = () => {
       // Jaturaput Jongsubcharoen: wire registration to backend auth.
       const response = await registerWithPassword({
         email: signUpEmail,
+        name: signUpName,
         password: signUpPassword,
         mode: 'home',
         role: 'Parent',
       });
       const tokenExpiresAt = Date.now() + response.expires_in * 1000;
-      login(signUpEmail, response.access_token, response.role, tokenExpiresAt, signUpName);
+      const responseName = resolveNameFromAuthResponse(response);
+      const preferredName = responseName || signUpName;
+      const emailForFallback = response.email || signUpEmail;
+      const fallbackName = fallbackNameFromEmail(emailForFallback);
+      const finalUserName = (preferredName && preferredName.trim()) || fallbackName;
+
+      login(signUpEmail, response.access_token, response.role, tokenExpiresAt, finalUserName);
       localStorage.setItem('accessToken', response.access_token);
       navigate('/home');
     } catch (error) {

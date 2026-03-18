@@ -5,21 +5,28 @@ export interface AuthLoginResponse {
   expires_in: number;
   role: string;
   mode: AuthMode;
+  email?: string;
+  name?: string;
+  username?: string;
   first_name?: string;
   last_name?: string;
   full_name?: string;
 }
 
 export interface UserProfile {
-  email: string;
+  user_id?: string;
+  email?: string;
+  name?: string;
   first_name?: string;
   last_name?: string;
   full_name?: string;
   role?: string;
+  mode?: AuthMode;
 }
 
 export interface AuthRegisterRequest {
   email: string;
+  name?: string;
   password: string;
   mode: AuthMode;
   role: 'Parent' | 'Teacher' | 'Admin';
