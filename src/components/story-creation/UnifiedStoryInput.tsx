@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Box,
   Stack,
@@ -7,11 +7,12 @@ import {
   Alert,
   Collapse,
   Tooltip,
+  IconButton,
+  keyframes,
 } from "@mui/material";
-import { ChevronDown, ChevronUp, Shield } from "lucide-react";
+import { ChevronDown, ChevronUp, Shield, Mic, MicOff } from "lucide-react";
 import { KiddoCard, KiddoButton } from "../index";
 import { QuickStarterChips } from "./QuickStarterChips";
-import { VoiceInputButton } from "./VoiceInputButton";
 import { ImageUploadButton } from "./ImageUploadButton";
 import { AdvancedOptionsPanel } from "./AdvancedOptionsPanel";
 import type { ImageAttachment } from "../../types/storyOptions";
@@ -54,6 +55,18 @@ interface UnifiedStoryInputProps {
   hasExistingStory: boolean;
 }
 
+const micPulse = keyframes`
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+`;
+
 export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
   mode,
   childName,
@@ -93,7 +106,18 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
 }) => {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isVoiceSupported, setIsVoiceSupported] = useState(true);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const shouldRestartRef = useRef(false);
+  const finalTranscriptRef = useRef("");
+  const isStartingRef = useRef(false);
+  const restartTimeoutRef = useRef<number | null>(null);
+  const setTextPromptRef = useRef(setTextPrompt);
+  const setVoiceTranscriptionRef = useRef(setVoiceTranscription);
+  const textPromptRef = useRef(textPrompt);
 
   const handleTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setTextPrompt(event.target.value);
@@ -123,74 +147,274 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
     setReplaceTargetId(null);
   };
 
+  const startRecognition = useCallback(() => {
+    if (!recognitionRef.current || isStartingRef.current) {
+      return;
+    }
+
+    isStartingRef.current = true;
+    try {
+      recognitionRef.current.start();
+    } catch (err) {
+      console.error("Failed to start recognition:", err);
+      isStartingRef.current = false;
+      shouldRestartRef.current = false;
+      setVoiceError("Failed to start voice input. Please try again.");
+      setIsRecording(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    setTextPromptRef.current = setTextPrompt;
+  }, [setTextPrompt]);
+
+  useEffect(() => {
+    textPromptRef.current = textPrompt;
+  }, [textPrompt]);
+
+  useEffect(() => {
+    setVoiceTranscriptionRef.current = setVoiceTranscription;
+  }, [setVoiceTranscription]);
+
+  useEffect(() => {
+    const SpeechRecognitionConstructor =
+      typeof window !== "undefined"
+        ? (window as any).SpeechRecognition ||
+          (window as any).webkitSpeechRecognition
+        : null;
+
+    if (!SpeechRecognitionConstructor) {
+      setIsVoiceSupported(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognitionConstructor();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => {
+      isStartingRef.current = false;
+      setIsRecording(true);
+    };
+
+    recognition.onresult = (event: any) => {
+      let finalTranscript = "";
+      let interimTranscript = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const transcript = event.results[i][0]?.transcript ?? "";
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+
+      if (finalTranscript.trim()) {
+        finalTranscriptRef.current =
+          `${finalTranscriptRef.current} ${finalTranscript}`.trim();
+        const existingPrompt = textPromptRef.current ?? "";
+        const spacer = existingPrompt.trim().length ? " " : "";
+        const nextPrompt = `${existingPrompt}${spacer}${finalTranscript.trim()}`;
+        setTextPromptRef.current(nextPrompt);
+        textPromptRef.current = nextPrompt;
+        setVoiceTranscriptionRef.current(finalTranscriptRef.current);
+      } else if (interimTranscript.trim()) {
+        setVoiceTranscriptionRef.current(
+          `${finalTranscriptRef.current} ${interimTranscript}`.trim(),
+        );
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error:", event.error);
+      if (event.error === "aborted") {
+        if (!shouldRestartRef.current) {
+          setIsRecording(false);
+        }
+        return;
+      }
+
+      setVoiceError(
+        event.error === "no-speech"
+          ? "No speech detected. Please try again."
+          : "Voice input failed. Please try again.",
+      );
+
+      if (event.error !== "no-speech") {
+        shouldRestartRef.current = false;
+        setIsRecording(false);
+      }
+    };
+
+    recognition.onend = () => {
+      if (shouldRestartRef.current) {
+        if (restartTimeoutRef.current) {
+          window.clearTimeout(restartTimeoutRef.current);
+        }
+        restartTimeoutRef.current = window.setTimeout(() => {
+          if (!isStartingRef.current) {
+            startRecognition();
+          }
+        }, 250);
+        return;
+      }
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      shouldRestartRef.current = false;
+      if (restartTimeoutRef.current) {
+        window.clearTimeout(restartTimeoutRef.current);
+      }
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+    };
+  }, [startRecognition]);
+
+  useEffect(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = language === "en" ? "en-US" : language;
+    }
+  }, [language]);
+
+  const handleMicClick = () => {
+    if (!isVoiceSupported) {
+      setVoiceError(
+        "Voice input is not supported in this browser. Please use Chrome or Edge.",
+      );
+      return;
+    }
+
+    if (isRecording) {
+      shouldRestartRef.current = false;
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    setVoiceError(null);
+    shouldRestartRef.current = true;
+    finalTranscriptRef.current = "";
+    setVoiceTranscriptionRef.current(null);
+    setIsRecording(true);
+    startRecognition();
+  };
+
   // User can generate with any input - age band is completely optional
-  const hasAnyInput = 
-    textPrompt.trim() || 
-    voiceTranscription || 
-    uploadedImages.length > 0 || 
-    interests.length > 0 || 
-    tone || 
-    storyType || 
-    learningGoal !== "Just for fun" || 
-    currentMood || 
-    language !== "en" || 
+  const hasAnyInput =
+    textPrompt.trim() ||
+    voiceTranscription ||
+    uploadedImages.length > 0 ||
+    interests.length > 0 ||
+    tone ||
+    storyType ||
+    learningGoal !== "Just for fun" ||
+    currentMood ||
+    language !== "en" ||
     ageBand ||
     childName;
-  
+
   const canGenerate = hasAnyInput;
+
+  const micColor = !isVoiceSupported
+    ? "text.disabled"
+    : isRecording
+      ? "error.main"
+      : voiceTranscription
+        ? "success.main"
+        : "primary.main";
+
+  const micTooltipText = !isVoiceSupported
+    ? "Voice input not supported in this browser"
+    : voiceError
+      ? voiceError
+      : isRecording
+        ? "Click to stop recording"
+        : "Click to start voice input";
 
   return (
     <KiddoCard hoverEffect={false} sx={{ p: 4, borderRadius: 2 }}>
       <Stack spacing={3}>
         {/* Header */}
         <Box>
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              mb: 1,
+            }}
+          >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography variant="h4" sx={{ 
-                background: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                fontWeight: 800,
-              }}>
+              <Typography
+                variant="h4"
+                sx={{
+                  background:
+                    "linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  fontWeight: 800,
+                }}
+              >
                 Create a Story
               </Typography>
               <Tooltip title="Your data is not saved - privacy first!">
-                <Box sx={{ 
-                  display: "flex", 
-                  alignItems: "center",
-                  animation: 'pulse 2s ease-in-out infinite',
-                  '@keyframes pulse': {
-                    '0%, 100%': { opacity: 1 },
-                    '50%': { opacity: 0.7 },
-                  },
-                }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%, 100%": { opacity: 1 },
+                      "50%": { opacity: 0.7 },
+                    },
+                  }}
+                >
                   <Shield size={24} color="#4ECDC4" />
                 </Box>
               </Tooltip>
             </Box>
-            
+
             {/* Story Preferences Button - TOP RIGHT */}
             <KiddoButton
               variant="contained"
               onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
-              startIcon={isAdvancedOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-              sx={{ 
-                background: 'linear-gradient(135deg, #4ECDC4 0%, #45B649 100%)',
-                boxShadow: '0 4px 14px rgba(78, 205, 196, 0.4)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #45B649 0%, #4ECDC4 100%)',
-                  boxShadow: '0 6px 20px rgba(78, 205, 196, 0.6)',
+              startIcon={
+                isAdvancedOpen ? (
+                  <ChevronUp size={20} />
+                ) : (
+                  <ChevronDown size={20} />
+                )
+              }
+              sx={{
+                background: "linear-gradient(135deg, #4ECDC4 0%, #45B649 100%)",
+                boxShadow: "0 4px 14px rgba(78, 205, 196, 0.4)",
+                "&:hover": {
+                  background:
+                    "linear-gradient(135deg, #45B649 0%, #4ECDC4 100%)",
+                  boxShadow: "0 6px 20px rgba(78, 205, 196, 0.6)",
                 },
               }}
             >
               {isAdvancedOpen ? "Hide Preferences" : "Story Preferences"}
             </KiddoButton>
           </Box>
-          <Typography variant="body1" color="text.secondary" sx={{ 
-            fontSize: '1.05rem',
-            fontWeight: 500,
-          }}>
-            ✨ Tell KiddoLand what kind of story you’d like. We’ll keep it fun and age‑friendly!
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{
+              fontSize: "1.05rem",
+              fontWeight: 500,
+            }}
+          >
+            ✨ Tell KiddoLand what kind of story you’d like. We’ll keep it fun
+            and age‑friendly!
           </Typography>
         </Box>
 
@@ -223,20 +447,23 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 
         {/* Main Text Input - Now with fun styling */}
-        <Box sx={{ 
-          position: 'relative',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: -8,
-            left: -8,
-            right: -8,
-            bottom: -8,
-            background: 'linear-gradient(135deg, rgba(255,107,53,0.1), rgba(78,205,196,0.1))',
-            borderRadius: 2,
-            zIndex: 0,
-          }
-        }}>
+        <Box
+          sx={{
+            position: "relative",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: -8,
+              left: -8,
+              right: -8,
+              bottom: -8,
+              background:
+                "linear-gradient(135deg, rgba(255,107,53,0.1), rgba(78,205,196,0.1))",
+              borderRadius: 2,
+              zIndex: 0,
+            },
+          }}
+        >
           <TextField
             label="💭 Tell me about the story you'd like to create..."
             multiline
@@ -247,14 +474,35 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
             onKeyPress={handleKeyPress}
             placeholder="Example: Tell an exciting adventure story about a brave turtle going to space..."
             fullWidth
+            inputProps={{
+              style: {
+                caretColor: "#000000",
+                color: "#000000",
+                WebkitTextFillColor: "#000000",
+                opacity: 1,
+              },
+            }}
             sx={{
-              position: 'relative',
+              position: "relative",
               zIndex: 1,
               "& .MuiInputBase-root": {
                 fontSize: "1rem",
                 lineHeight: 1.6,
-                backgroundColor: 'rgba(255,255,255,0.9)',
+                backgroundColor: "rgba(255,255,255,0.9)",
                 borderRadius: 2,
+              },
+              "& .MuiInputBase-input": {
+                caretColor: "#000000",
+                color: "#000000",
+                WebkitTextFillColor: "#000000",
+                opacity: 1,
+              },
+              "& .MuiInputBase-inputMultiline": {
+                paddingRight: "5.5rem",
+                caretColor: "#000000",
+                color: "#000000",
+                WebkitTextFillColor: "#000000",
+                opacity: 1,
               },
               "& .MuiInputLabel-root": {
                 fontSize: "1rem",
@@ -262,28 +510,65 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
               },
             }}
           />
+          <Box
+            sx={{
+              position: "absolute",
+              right: 16,
+              bottom: 16,
+              zIndex: 2,
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <ImageUploadButton
+              variant="icon"
+              onAddImages={onAddImages}
+              imagesCount={uploadedImages.length}
+              isProcessing={isProcessingImages}
+            />
+            <Tooltip title={micTooltipText}>
+              <span>
+                <IconButton
+                  aria-label={
+                    isRecording ? "Stop voice input" : "Start voice input"
+                  }
+                  aria-pressed={isRecording}
+                  onClick={handleMicClick}
+                  disabled={!isVoiceSupported}
+                  sx={{
+                    color: micColor,
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    border: "1px solid",
+                    borderColor: micColor,
+                    backgroundColor: isRecording
+                      ? "rgba(239, 68, 68, 0.12)"
+                      : "rgba(255, 255, 255, 0.95)",
+                    boxShadow: "none",
+                    animation: isRecording
+                      ? `${micPulse} 1.8s infinite`
+                      : "none",
+                    "&:hover": {
+                      borderColor: micColor,
+                      backgroundColor: isRecording
+                        ? "rgba(239, 68, 68, 0.18)"
+                        : "rgba(255, 255, 255, 1)",
+                    },
+                    "&:disabled": {
+                      borderColor: "text.disabled",
+                      color: "text.disabled",
+                      backgroundColor: "rgba(255, 255, 255, 0.7)",
+                    },
+                  }}
+                >
+                  {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Box>
         </Box>
-
-        {/* Voice and Image Buttons - Centered and prominent */}
-        <Stack
-          direction="row"
-          spacing={2}
-          alignItems="center"
-          justifyContent="center"
-          sx={{
-            py: 1,
-          }}
-        >
-          <VoiceInputButton
-            onTranscribe={(transcription) => setVoiceTranscription(transcription)}
-            currentTranscription={voiceTranscription}
-          />
-          <ImageUploadButton
-            onAddImages={onAddImages}
-            imagesCount={uploadedImages.length}
-            isProcessing={isProcessingImages}
-          />
-        </Stack>
 
         {imageError && uploadedImages.length === 0 && (
           <Alert severity="error">{imageError}</Alert>
@@ -298,10 +583,17 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
               </Alert>
             )}
             <Stack spacing={2}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#FF6B35" }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ fontWeight: 700, color: "#FF6B35" }}
+              >
                 🖼️ Image Preview
               </Typography>
-              <Stack direction="row" spacing={2} sx={{ overflowX: "auto", pb: 1 }}>
+              <Stack
+                direction="row"
+                spacing={2}
+                sx={{ overflowX: "auto", pb: 1 }}
+              >
                 {uploadedImages.map((image) => (
                   <Box
                     key={image.id}
@@ -327,7 +619,11 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
                         mb: 1,
                       }}
                     />
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", mb: 1 }}
+                    >
                       {image.caption}
                     </Typography>
                     <Stack direction="row" spacing={1}>
@@ -389,16 +685,24 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
             severity="info"
             onClose={() => setVoiceTranscription(null)}
             sx={{
-              background: 'linear-gradient(135deg, rgba(78,205,196,0.15), rgba(69,182,73,0.15))',
-              borderLeft: '4px solid #4ECDC4',
+              background:
+                "linear-gradient(135deg, rgba(78,205,196,0.15), rgba(69,182,73,0.15))",
+              borderLeft: "4px solid #4ECDC4",
             }}
           >
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, color: '#4ECDC4' }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ fontWeight: 700, mb: 0.5, color: "#4ECDC4" }}
+            >
               🎤 Voice Input:
             </Typography>
             <Typography variant="body2">{voiceTranscription}</Typography>
             {detectedSummary && (
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", mt: 0.5 }}
+              >
                 Detected: {detectedSummary}
               </Typography>
             )}
@@ -412,36 +716,43 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
           onClick={onGenerate}
           disabled={isGenerating || !canGenerate}
           fullWidth
-          sx={{ 
-            py: 2, 
+          sx={{
+            py: 2,
             fontSize: "1.2rem",
             fontWeight: 800,
-            background: !canGenerate 
-              ? 'linear-gradient(135deg, #CCCCCC, #999999)'
+            background: !canGenerate
+              ? "linear-gradient(135deg, #CCCCCC, #999999)"
               : hasExistingStory
-              ? 'linear-gradient(135deg, #9C27B0 0%, #E91E63 100%)'
-              : 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)',
-            boxShadow: !canGenerate ? 'none' : hasExistingStory ? '0 6px 20px rgba(156,39,176,0.4)' : '0 6px 20px rgba(255,107,53,0.4)',
-            '&:hover': {
-              background: !canGenerate 
-                ? 'linear-gradient(135deg, #CCCCCC, #999999)'
+                ? "linear-gradient(135deg, #9C27B0 0%, #E91E63 100%)"
+                : "linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)",
+            boxShadow: !canGenerate
+              ? "none"
+              : hasExistingStory
+                ? "0 6px 20px rgba(156,39,176,0.4)"
+                : "0 6px 20px rgba(255,107,53,0.4)",
+            "&:hover": {
+              background: !canGenerate
+                ? "linear-gradient(135deg, #CCCCCC, #999999)"
                 : hasExistingStory
-                ? 'linear-gradient(135deg, #E91E63 0%, #9C27B0 100%)'
-                : 'linear-gradient(135deg, #F7931E 0%, #FF6B35 100%)',
-              boxShadow: !canGenerate ? 'none' : hasExistingStory ? '0 8px 28px rgba(156,39,176,0.6)' : '0 8px 28px rgba(255,107,53,0.6)',
+                  ? "linear-gradient(135deg, #E91E63 0%, #9C27B0 100%)"
+                  : "linear-gradient(135deg, #F7931E 0%, #FF6B35 100%)",
+              boxShadow: !canGenerate
+                ? "none"
+                : hasExistingStory
+                  ? "0 8px 28px rgba(156,39,176,0.6)"
+                  : "0 8px 28px rgba(255,107,53,0.6)",
             },
           }}
         >
-          {isGenerating 
-            ? hasExistingStory 
-              ? "✨ Refining Your Story..." 
-              : "✨ Creating Your Magic Story..." 
-            : hasExistingStory 
-            ? "🔄 Refine Story" 
-            : "🚀 Generate Story"}
+          {isGenerating
+            ? hasExistingStory
+              ? "✨ Refining Your Story..."
+              : "✨ Creating Your Magic Story..."
+            : hasExistingStory
+              ? "🔄 Refine Story"
+              : "🚀 Generate Story"}
         </KiddoButton>
       </Stack>
     </KiddoCard>
   );
 };
-
