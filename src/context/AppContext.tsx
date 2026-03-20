@@ -16,6 +16,13 @@ interface AppContextType {
   appState: AppState;
   setMode: (mode: AppMode) => void;
   login: (email: string, accessToken?: string, userRole?: string, tokenExpiresAt?: number, userName?: string) => void;
+  updateSession: (payload: {
+    accessToken: string;
+    tokenExpiresAt: number;
+    userRole?: string;
+    userEmail?: string;
+    userName?: string;
+  }) => void;
   logout: () => void;
 }
 
@@ -84,6 +91,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }));
   };
 
+  const updateSession = (payload: {
+    accessToken: string;
+    tokenExpiresAt: number;
+    userRole?: string;
+    userEmail?: string;
+    userName?: string;
+  }) => {
+    setAppState(prev => ({
+      ...prev,
+      isAuthenticated: true,
+      accessToken: payload.accessToken,
+      tokenExpiresAt: payload.tokenExpiresAt,
+      userRole: payload.userRole ?? prev.userRole,
+      userEmail: payload.userEmail ?? prev.userEmail,
+      userName: payload.userName ?? prev.userName,
+    }));
+  };
+
   const logout = () => {
     setAppState({
       selectedMode: null,
@@ -96,8 +121,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   };
 
+  useEffect(() => {
+    if (!appState.isAuthenticated || !appState.tokenExpiresAt) {
+      return;
+    }
+
+    const msLeft = appState.tokenExpiresAt - Date.now();
+    if (msLeft <= 0) {
+      logout();
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      logout();
+    }, msLeft);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [appState.isAuthenticated, appState.tokenExpiresAt, logout]);
+
   return (
-    <AppContext.Provider value={{ appState, setMode, login, logout }}>
+    <AppContext.Provider value={{ appState, setMode, login, updateSession, logout }}>
       {children}
     </AppContext.Provider>
   );
