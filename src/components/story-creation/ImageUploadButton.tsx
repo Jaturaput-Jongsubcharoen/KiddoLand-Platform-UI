@@ -1,6 +1,7 @@
-import React, { useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Button, CircularProgress, IconButton, Menu, MenuItem, Tooltip } from "@mui/material";
 import { Camera, Check, Image as ImageIcon, Upload } from "lucide-react";
+import { CameraCaptureDialog } from "./CameraCaptureDialog";
 
 interface ImageUploadButtonProps {
   onAddImages: (files: File[]) => void;
@@ -18,6 +19,11 @@ export const ImageUploadButton: React.FC<ImageUploadButtonProps> = ({
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+  const cameraRequestRef = useRef(0);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isCameraLoading, setIsCameraLoading] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
     setMenuAnchor(event.currentTarget);
@@ -26,6 +32,21 @@ export const ImageUploadButton: React.FC<ImageUploadButtonProps> = ({
   const handleMenuClose = () => {
     setMenuAnchor(null);
   };
+
+  const stopCameraStream = useCallback(() => {
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current = null;
+    }
+    setCameraStream(null);
+    setIsCameraLoading(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopCameraStream();
+    };
+  }, [stopCameraStream]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -36,14 +57,62 @@ export const ImageUploadButton: React.FC<ImageUploadButtonProps> = ({
     handleMenuClose();
   };
 
-  const handleTakePhoto = () => {
+  const supportsDirectCamera = () => {
+    if (typeof window === "undefined") return false;
+    if (!window.isSecureContext) return false;
+    return Boolean(navigator.mediaDevices?.getUserMedia);
+  };
+
+  const handleTakePhoto = async () => {
     handleMenuClose();
-    cameraInputRef.current?.click();
+
+    if (!supportsDirectCamera()) {
+      cameraInputRef.current?.click();
+      return;
+    }
+
+    const requestId = cameraRequestRef.current + 1;
+    cameraRequestRef.current = requestId;
+    setIsCameraOpen(true);
+    setIsCameraLoading(true);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false,
+      });
+      if (cameraRequestRef.current !== requestId) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      cameraStreamRef.current = stream;
+      setCameraStream(stream);
+    } catch (error) {
+      console.warn("Camera access failed, falling back to file picker:", error);
+      setIsCameraOpen(false);
+      stopCameraStream();
+      cameraInputRef.current?.click();
+    } finally {
+      setIsCameraLoading(false);
+    }
   };
 
   const handleUploadImage = () => {
     handleMenuClose();
     uploadInputRef.current?.click();
+  };
+
+  const handleCameraClose = () => {
+    cameraRequestRef.current += 1;
+    setIsCameraOpen(false);
+    stopCameraStream();
+  };
+
+  const handleCameraCapture = (file: File) => {
+    cameraRequestRef.current += 1;
+    onAddImages([file]);
+    setIsCameraOpen(false);
+    stopCameraStream();
   };
 
   const buttonColor = imagesCount > 0 ? "success.main" : "primary.main";
@@ -176,6 +245,14 @@ export const ImageUploadButton: React.FC<ImageUploadButtonProps> = ({
           Cancel
         </MenuItem>
       </Menu>
+
+      <CameraCaptureDialog
+        open={isCameraOpen}
+        stream={cameraStream}
+        isLoading={isCameraLoading}
+        onCapture={handleCameraCapture}
+        onClose={handleCameraClose}
+      />
     </>
   );
 };
