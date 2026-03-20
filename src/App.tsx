@@ -9,6 +9,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kiddoTheme } from './theme/theme';
 import { AppProvider } from './context/AppContext';
 import { ProtectedRoute } from './components';
+import SessionExpiryWarning from './components/SessionExpiryWarning';
 
 // Pages
 import ModeSelectPage from './pages/ModeSelectPage';
@@ -31,6 +32,7 @@ const App: React.FC = () => {
           v7_startTransition: true,
           v7_relativeSplatPath: true 
         }}>
+          <SessionExpiryWarning />
           <Routes>
             {/* Mode Selection */}
             <Route path="/" element={<ModeSelectPage />} />

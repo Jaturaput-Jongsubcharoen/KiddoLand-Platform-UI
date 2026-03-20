@@ -103,3 +103,22 @@ export const getUserProfile = async (accessToken: string): Promise<UserProfile> 
 
   return response.json();
 };
+
+export const refreshSession = async (accessToken: string): Promise<AuthLoginResponse> => {
+  const apiBaseUrl = resolveApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/auth/refresh`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({}));
+    const errorMessage = errorPayload?.detail || 'Unable to refresh session.';
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+};
