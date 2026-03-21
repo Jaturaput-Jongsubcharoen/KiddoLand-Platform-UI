@@ -44,6 +44,9 @@ export const CreateStoryUnifiedPage: React.FC = () => {
   // Generated story state
   const [generatedStory, setGeneratedStory] = useState("");
   const [rewrittenStory, setRewrittenStory] = useState("");
+  const [generatedStoryAudioSrc, setGeneratedStoryAudioSrc] = useState<string | null>(null);
+  const [rewrittenStoryAudioSrc, setRewrittenStoryAudioSrc] = useState<string | null>(null);
+  const [isTtsEnabled, setIsTtsEnabled] = useState(true);
 
   // UI state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -230,14 +233,23 @@ export const CreateStoryUnifiedPage: React.FC = () => {
 
       const response = await generateStorySample(
         combinedPrompt,
-        appState.accessToken
+        appState.accessToken,
+        isTtsEnabled
       );
+
+      const ttsAudioSrc =
+        response.tts_audio_base64 && response.tts_media_type
+          ? `data:${response.tts_media_type};base64,${response.tts_audio_base64}`
+          : null;
       
       // If this is a refinement (story already exists), set as rewritten story
       if (generatedStory) {
         setRewrittenStory(response.output);
+        setRewrittenStoryAudioSrc(ttsAudioSrc);
       } else {
         setGeneratedStory(response.output);
+        setGeneratedStoryAudioSrc(ttsAudioSrc);
+        setRewrittenStoryAudioSrc(null);
       }
     } catch (error) {
       const message =
@@ -421,6 +433,8 @@ export const CreateStoryUnifiedPage: React.FC = () => {
           setLanguage={setLanguage}
           detectedSummary={detectedSummary}
           onGenerate={handleGenerate}
+          isTtsEnabled={isTtsEnabled}
+          onToggleTts={() => setIsTtsEnabled((prev) => !prev)}
           isGenerating={isGenerating}
           errorMessage={errorMessage}
           hasExistingStory={!!generatedStory}
@@ -431,6 +445,8 @@ export const CreateStoryUnifiedPage: React.FC = () => {
           <StoryPreviewPanel
             generatedStory={generatedStory}
             rewrittenStory={rewrittenStory}
+            generatedStoryAudioSrc={generatedStoryAudioSrc}
+            rewrittenStoryAudioSrc={rewrittenStoryAudioSrc}
             onSaveFavorite={handleSaveFavorite}
             isSavingFavorite={isSavingFavorite}
             isFavoriteSaved={isFavoriteSaved}

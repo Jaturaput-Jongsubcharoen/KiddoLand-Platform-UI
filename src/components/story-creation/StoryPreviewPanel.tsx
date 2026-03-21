@@ -8,6 +8,8 @@ import { KiddoCard } from "../index";
 interface StoryPreviewPanelProps {
   generatedStory: string;
   rewrittenStory: string;
+  generatedStoryAudioSrc?: string | null;
+  rewrittenStoryAudioSrc?: string | null;
   onSaveFavorite: () => void;
   isSavingFavorite: boolean;
   isFavoriteSaved: boolean;
@@ -18,6 +20,8 @@ interface StoryPreviewPanelProps {
 export const StoryPreviewPanel: React.FC<StoryPreviewPanelProps> = ({
   generatedStory,
   rewrittenStory,
+  generatedStoryAudioSrc,
+  rewrittenStoryAudioSrc,
   onSaveFavorite,
   isSavingFavorite,
   isFavoriteSaved,
@@ -81,6 +85,13 @@ export const StoryPreviewPanel: React.FC<StoryPreviewPanelProps> = ({
           <Typography variant="h5" sx={{ mb: 2, fontWeight: 600, pr: 5 }}>
             📖 Your Story
           </Typography>
+          {generatedStoryAudioSrc && (
+            <Box sx={{ mb: 2 }}>
+              <audio controls preload="none" src={generatedStoryAudioSrc}>
+                Your browser does not support audio playback.
+              </audio>
+            </Box>
+          )}
           <Box
             sx={{
               typography: "body1",
@@ -108,6 +119,13 @@ export const StoryPreviewPanel: React.FC<StoryPreviewPanelProps> = ({
             <Typography variant="h5" sx={{ mb: 2, fontWeight: 600, color: "primary.main" }}>
               ✨ Refined Story
             </Typography>
+            {rewrittenStoryAudioSrc && (
+              <Box sx={{ mb: 2 }}>
+                <audio controls preload="none" src={rewrittenStoryAudioSrc}>
+                  Your browser does not support audio playback.
+                </audio>
+              </Box>
+            )}
             <Box
               sx={{
                 typography: "body1",

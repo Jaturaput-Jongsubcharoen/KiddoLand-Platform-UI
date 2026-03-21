@@ -1,5 +1,7 @@
 interface AiSampleResponse {
   output: string;
+  tts_audio_base64?: string | null;
+  tts_media_type?: string | null;
 }
 
 interface RhymeGenerateResponse {
@@ -42,7 +44,8 @@ const resolveApiBaseUrl = (): string => {
 
 export const generateStorySample = async (
   prompt: string,
-  accessToken: string
+  accessToken: string,
+  includeTts = true
 ): Promise<AiSampleResponse> => {
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/ai/sample`, {
@@ -51,7 +54,7 @@ export const generateStorySample = async (
       'Content-Type': 'application/json',
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({ prompt, include_tts: includeTts }),
   });
 
   if (!response.ok) {
