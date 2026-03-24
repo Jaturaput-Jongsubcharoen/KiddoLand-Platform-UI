@@ -10,7 +10,7 @@ import {
   IconButton,
   keyframes,
 } from "@mui/material";
-import { ChevronDown, ChevronUp, Shield, Mic, MicOff } from "lucide-react";
+import { ChevronDown, ChevronUp, Shield, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import { KiddoCard, KiddoButton } from "../index";
 import { QuickStarterChips } from "./QuickStarterChips";
 import { ImageUploadButton } from "./ImageUploadButton";
@@ -50,6 +50,8 @@ interface UnifiedStoryInputProps {
   setLanguage: (language: string) => void;
   detectedSummary: string;
   onGenerate: () => void;
+  isTtsEnabled: boolean;
+  onToggleTts: () => void;
   isGenerating: boolean;
   errorMessage: string;
   hasExistingStory: boolean;
@@ -100,6 +102,8 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
   setLanguage,
   detectedSummary,
   onGenerate,
+  isTtsEnabled,
+  onToggleTts,
   isGenerating,
   errorMessage,
   hasExistingStory,
@@ -338,6 +342,8 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
         ? "Click to stop recording"
         : "Click to start voice input";
 
+  const ttsColor = isTtsEnabled ? "primary.main" : "error.main";
+
   return (
     <KiddoCard hoverEffect={false} sx={{ p: 4, borderRadius: 2 }}>
       <Stack spacing={3}>
@@ -527,6 +533,39 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
               imagesCount={uploadedImages.length}
               isProcessing={isProcessingImages}
             />
+            <Tooltip
+              title={
+                isTtsEnabled
+                  ? "Audio narration is ON (include_tts=true)"
+                  : "Audio narration is OFF (include_tts=false)"
+              }
+            >
+              <IconButton
+                aria-label={isTtsEnabled ? "Disable audio narration" : "Enable audio narration"}
+                aria-pressed={isTtsEnabled}
+                onClick={onToggleTts}
+                sx={{
+                  color: ttsColor,
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  border: "1px solid",
+                  borderColor: ttsColor,
+                  backgroundColor: isTtsEnabled
+                    ? "rgba(255, 255, 255, 0.95)"
+                    : "rgba(239, 68, 68, 0.12)",
+                  boxShadow: "none",
+                  "&:hover": {
+                    borderColor: ttsColor,
+                    backgroundColor: isTtsEnabled
+                      ? "rgba(255, 255, 255, 1)"
+                      : "rgba(239, 68, 68, 0.18)",
+                  },
+                }}
+              >
+                {isTtsEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+              </IconButton>
+            </Tooltip>
             <Tooltip title={micTooltipText}>
               <span>
                 <IconButton
