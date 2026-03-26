@@ -10,7 +10,7 @@ import {
   IconButton,
   keyframes,
 } from "@mui/material";
-import { ChevronDown, ChevronUp, Shield, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import { ChevronDown, ChevronUp, Shield, Mic, MicOff,Volume2,VolumeX } from "lucide-react";
 import { KiddoCard, KiddoButton } from "../index";
 import { QuickStarterChips } from "./QuickStarterChips";
 import { ImageUploadButton } from "./ImageUploadButton";
@@ -533,14 +533,14 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
               imagesCount={uploadedImages.length}
               isProcessing={isProcessingImages}
             />
-            <Tooltip
+            {/* <Tooltip
               title={
                 isTtsEnabled
                   ? "Audio narration is ON (include_tts=true)"
                   : "Audio narration is OFF (include_tts=false)"
               }
-            >
-              <IconButton
+            > */}
+              {/* <IconButton
                 aria-label={isTtsEnabled ? "Disable audio narration" : "Enable audio narration"}
                 aria-pressed={isTtsEnabled}
                 onClick={onToggleTts}
@@ -564,8 +564,8 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
                 }}
               >
                 {isTtsEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
-              </IconButton>
-            </Tooltip>
+              </IconButton> */}
+            {/* </Tooltip> */}
             <Tooltip title={micTooltipText}>
               <span>
                 <IconButton

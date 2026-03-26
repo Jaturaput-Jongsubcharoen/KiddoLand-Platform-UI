@@ -247,6 +247,67 @@ export const getFavoriteStories = async (accessToken: string): Promise<StoryHist
   return await response.json();
 };
 
+export type StoryVideoImageProvider = 'gemini' | 'huggingface';
+
+export const generateStoryVideo = async (
+  story: string,
+  accessToken: string,
+  options?: {
+    includeVoice?: boolean;
+    imageProvider?: StoryVideoImageProvider;
+  }
+): Promise<Blob> => {
+  const includeVoice = options?.includeVoice ?? true;
+  const imageProvider = options?.imageProvider ?? 'gemini';
+  const apiBaseUrl = resolveApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/generate-video`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      story,
+      include_voice: includeVoice,
+      image_provider: imageProvider,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({}));
+    const backendMessage =
+      typeof errorPayload?.detail === 'string' ? errorPayload.detail : '';
+
+    if (response.status === 400) {
+      throw new Error(backendMessage || 'Cannot create video from this story.');
+    }
+
+    if (response.status === 422) {
+      throw new Error('Story text is too short or invalid for video (minimum 10 characters).');
+    }
+
+    if (response.status === 401) {
+      throw new Error('Your session has expired. Please sign in again.');
+    }
+
+    if (response.status === 429) {
+      throw new Error(
+        backendMessage || 'Video service is rate-limited. Please try again in a few minutes.'
+      );
+    }
+
+    if (response.status >= 500) {
+      throw new Error(
+        backendMessage || 'Video generation failed on the server. Please try again later.'
+      );
+    }
+
+    throw new Error(backendMessage || 'Unable to generate story video right now.');
+  }
+
+  return response.blob();
+};
+
 export const deleteStory = async (storyId: string, accessToken: string): Promise<{ success: boolean; message: string }> => {
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/ai/history/${storyId}`, {
