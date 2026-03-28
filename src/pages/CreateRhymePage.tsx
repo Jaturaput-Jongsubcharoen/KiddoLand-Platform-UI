@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -8,6 +8,7 @@ import {
   FormControl,
   IconButton,
   InputLabel,
+  keyframes,
   MenuItem,
   Select,
   SelectChangeEvent,
@@ -25,10 +26,15 @@ import {
   Copy,
   Check,
   Heart,
+  Mic,
+  MicOff,
   RotateCcw,
   Shuffle,
   BookOpen,
 } from "lucide-react";
+import { ImageUploadButton } from "../components/story-creation/ImageUploadButton";
+import { buildImageContext, processImageFiles } from "../utils/imageProcessing";
+import type { ImageAttachment } from "../types/storyOptions";
 import { AppShellLayout, KiddoButton, KiddoCard } from "../components";
 import { LearningWorldScene } from "../components/LearningWorldScene";
 import BackButton from "../components/BackButton";
@@ -45,6 +51,13 @@ import {
   type RhymeStyle,
   type RhymePattern,
 } from "../utils/rhymePrompt";
+
+// ── Animations ────────────────────────────────────────────────────────────────
+const micPulse = keyframes`
+  0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45); }
+  70%  { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+`;
 
 // ── Topic starter chips ───────────────────────────────────────────────────────
 const QUICK_TOPICS = [
@@ -97,6 +110,26 @@ const CreateRhymePage: React.FC = () => {
   const [learningFocus, setLearningFocus] = useState(DEFAULTS.learningFocus);
   const [optionsOpen, setOptionsOpen] = useState(false);
 
+  // Voice input state
+  const [isRecording, setIsRecording] = useState(false);
+  const [isVoiceSupported, setIsVoiceSupported] = useState(true);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [voiceTranscription, setVoiceTranscription] = useState<string | null>(null);
+
+  // Image input state
+  const [uploadedImages, setUploadedImages] = useState<ImageAttachment[]>([]);
+  const [imageError, setImageError] = useState("");
+  const [isProcessingImages, setIsProcessingImages] = useState(false);
+
+  // Refs for voice recognition
+  const recognitionRef = useRef<any>(null);
+  const shouldRestartRef = useRef(false);
+  const finalTranscriptRef = useRef("");
+  const isStartingRef = useRef(false);
+  const restartTimeoutRef = useRef<number | null>(null);
+  const topicRef = useRef(topic);
+  const lastImagePromptRef = useRef("");
+
   // Generation state
   const [rhyme, setRhyme] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -108,6 +141,182 @@ const CreateRhymePage: React.FC = () => {
   const [favoriteMessage, setFavoriteMessage] = useState("");
   const [copied, setCopied] = useState(false);
 
+  // Keep topicRef in sync for voice handler closure
+  useEffect(() => { topicRef.current = topic; }, [topic]);
+
+  // ── Voice recognition setup ───────────────────────────────────────────────────
+  const startRecognition = useCallback(() => {
+    if (!recognitionRef.current || isStartingRef.current) return;
+    isStartingRef.current = true;
+    try {
+      recognitionRef.current.start();
+    } catch {
+      isStartingRef.current = false;
+      shouldRestartRef.current = false;
+      setVoiceError("Failed to start voice input. Please try again.");
+      setIsRecording(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const SpeechRecognitionConstructor =
+      typeof window !== "undefined"
+        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        : null;
+
+    if (!SpeechRecognitionConstructor) {
+      setIsVoiceSupported(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognitionConstructor();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => { isStartingRef.current = false; setIsRecording(true); };
+
+    recognition.onresult = (event: any) => {
+      let finalTranscript = "";
+      let interimTranscript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0]?.transcript ?? "";
+        if (event.results[i].isFinal) finalTranscript += t;
+        else interimTranscript += t;
+      }
+      if (finalTranscript.trim()) {
+        finalTranscriptRef.current = `${finalTranscriptRef.current} ${finalTranscript}`.trim();
+        const existing = topicRef.current ?? "";
+        const spacer = existing.trim().length ? " " : "";
+        const next = `${existing}${spacer}${finalTranscript.trim()}`;
+        setTopic(next);
+        topicRef.current = next;
+        setVoiceTranscription(finalTranscriptRef.current);
+      } else if (interimTranscript.trim()) {
+        setVoiceTranscription(`${finalTranscriptRef.current} ${interimTranscript}`.trim());
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      if (event.error === "aborted") {
+        if (!shouldRestartRef.current) setIsRecording(false);
+        return;
+      }
+      setVoiceError(
+        event.error === "no-speech"
+          ? "No speech detected. Please try again."
+          : "Voice input failed. Please try again.",
+      );
+      if (event.error !== "no-speech") { shouldRestartRef.current = false; setIsRecording(false); }
+    };
+
+    recognition.onend = () => {
+      if (shouldRestartRef.current) {
+        if (restartTimeoutRef.current) window.clearTimeout(restartTimeoutRef.current);
+        restartTimeoutRef.current = window.setTimeout(() => {
+          if (!isStartingRef.current) startRecognition();
+        }, 250);
+        return;
+      }
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+    return () => {
+      shouldRestartRef.current = false;
+      if (restartTimeoutRef.current) window.clearTimeout(restartTimeoutRef.current);
+      if (recognitionRef.current) recognitionRef.current.abort();
+    };
+  }, [startRecognition]);
+
+  const handleMicClick = () => {
+    if (!isVoiceSupported) {
+      setVoiceError("Voice input is not supported in this browser. Please use Chrome or Edge.");
+      return;
+    }
+    if (isRecording) {
+      shouldRestartRef.current = false;
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+    setVoiceError(null);
+    shouldRestartRef.current = true;
+    finalTranscriptRef.current = "";
+    setVoiceTranscription(null);
+    setIsRecording(true);
+    startRecognition();
+  };
+
+  // ── Image handlers ────────────────────────────────────────────────────────────
+  const buildImageSentence = (context: string) =>
+    context ? `inspired by ${context}` : "";
+
+  const upsertImageContext = (nextContext: string) => {
+    const nextSentence = buildImageSentence(nextContext);
+    setTopic((prev) => {
+      let next = prev.trimEnd();
+      if (lastImagePromptRef.current && next.includes(lastImagePromptRef.current)) {
+        next = next.replace(lastImagePromptRef.current, "").trimEnd();
+      }
+      if (nextSentence) {
+        const separator = next ? ", " : "";
+        next = `${next}${separator}${nextSentence}`;
+        lastImagePromptRef.current = nextSentence;
+      } else {
+        lastImagePromptRef.current = "";
+      }
+      return next;
+    });
+  };
+
+  const handleAddImages = async (files: File[]) => {
+    if (!files.length) return;
+    setIsProcessingImages(true);
+    setImageError("");
+    try {
+      const attachments = await processImageFiles(files);
+      setUploadedImages((prev) => {
+        const next = [...prev, ...attachments];
+        upsertImageContext(buildImageContext(next));
+        return next;
+      });
+    } catch (error) {
+      setImageError(
+        error instanceof Error ? error.message : "Failed to process image. Please try again.",
+      );
+    } finally {
+      setIsProcessingImages(false);
+    }
+  };
+
+  const handleRemoveImage = (id: string) => {
+    setImageError("");
+    setUploadedImages((prev) => {
+      const target = prev.find((img) => img.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      const next = prev.filter((img) => img.id !== id);
+      upsertImageContext(buildImageContext(next));
+      return next;
+    });
+  };
+
+  // ── Derived mic UI values ─────────────────────────────────────────────────────
+  const micColor = !isVoiceSupported
+    ? "text.disabled"
+    : isRecording
+      ? "error.main"
+      : voiceTranscription
+        ? "success.main"
+        : "primary.main";
+
+  const micTooltipText = !isVoiceSupported
+    ? "Voice input not supported (use Chrome or Edge)"
+    : isRecording
+      ? "Stop recording"
+      : "Start voice input";
+
   // Derived labels
   const canGenerate = useMemo(
     () => childName.trim().length > 0 && age >= 1 && age <= 10,
@@ -117,6 +326,12 @@ const CreateRhymePage: React.FC = () => {
   const activePatternLabel = RHYME_PATTERNS.find((p) => p.value === rhymePattern)?.label ?? rhymePattern;
   const activePurposeLabel = RHYME_PURPOSES.find((p) => p.value === rhymePurpose)?.label ?? "";
   const activeLearningLabel = LEARNING_FOCUSES.find((f) => f.value === learningFocus)?.label ?? "";
+
+  const hasNonDefaultOptions =
+    rhymeStyle !== DEFAULTS.rhymeStyle ||
+    rhymePattern !== DEFAULTS.rhymePattern ||
+    rhymeLength !== DEFAULTS.rhymeLength ||
+    !!tone || !!activePurposeLabel || !!topic || !!activeLearningLabel;
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
@@ -161,6 +376,20 @@ const CreateRhymePage: React.FC = () => {
     setIsFavoriteSaved(false);
     setFavoriteMessage("");
     setCopied(false);
+    // Clear voice state
+    shouldRestartRef.current = false;
+    if (recognitionRef.current) recognitionRef.current.abort();
+    setIsRecording(false);
+    setVoiceTranscription(null);
+    setVoiceError(null);
+    finalTranscriptRef.current = "";
+    // Clear image state
+    setUploadedImages((prev) => {
+      prev.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+      return [];
+    });
+    setImageError("");
+    lastImagePromptRef.current = "";
   };
 
   const handleGenerate = async () => {
@@ -305,12 +534,18 @@ const CreateRhymePage: React.FC = () => {
                 </KiddoButton>
               </Stack>
 
-              {/* ── Active-options summary — only when collapsed ── */}
-              {!optionsOpen && (
+              {/* ── Active-options summary — only when collapsed and something is non-default ── */}
+              {!optionsOpen && hasNonDefaultOptions && (
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                  <Chip size="small" label={activeStyleLabel} variant="outlined" />
-                  <Chip size="small" label={activePatternLabel} variant="outlined" />
-                  <Chip size="small" label={LENGTH_LABELS[rhymeLength]} variant="outlined" />
+                  {rhymeStyle !== DEFAULTS.rhymeStyle && (
+                    <Chip size="small" label={activeStyleLabel} variant="outlined" />
+                  )}
+                  {rhymePattern !== DEFAULTS.rhymePattern && (
+                    <Chip size="small" label={activePatternLabel} variant="outlined" />
+                  )}
+                  {rhymeLength !== DEFAULTS.rhymeLength && (
+                    <Chip size="small" label={LENGTH_LABELS[rhymeLength]} variant="outlined" />
+                  )}
                   {tone && <Chip size="small" label={tone} color="primary" variant="outlined" />}
                   {activePurposeLabel && (
                     <Chip size="small" label={activePurposeLabel} color="secondary" variant="outlined" />
@@ -558,16 +793,172 @@ const CreateRhymePage: React.FC = () => {
                 </Box>
               </Stack>
 
-              {/* ── Topic textarea ── */}
-              <TextField
-                label="Rhyme topic (optional)"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder='Describe what the rhyme should be about, or use Quick ideas inside "Rhyme options" above'
-                multiline
-                minRows={2}
-                fullWidth
-              />
+              {/* ── Topic textarea + mic/camera overlay ── */}
+              <Box sx={{ position: "relative" }}>
+                <TextField
+                  label="Rhyme topic (optional)"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder='Describe what the rhyme should be about, or use Quick ideas above — or speak / upload a photo!'
+                  multiline
+                  minRows={2}
+                  fullWidth
+                  sx={{
+                    "& .MuiInputBase-inputMultiline": {
+                      paddingRight: "5.5rem",
+                    },
+                  }}
+                />
+                {/* Icon buttons: camera + mic */}
+                <Box
+                  sx={{
+                    position: "absolute",
+                    right: 12,
+                    bottom: 12,
+                    zIndex: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <ImageUploadButton
+                    variant="icon"
+                    onAddImages={handleAddImages}
+                    imagesCount={uploadedImages.length}
+                    isProcessing={isProcessingImages}
+                  />
+                  <Tooltip title={micTooltipText}>
+                    <span>
+                      <IconButton
+                        onClick={handleMicClick}
+                        disabled={!isVoiceSupported}
+                        sx={{
+                          color: micColor,
+                          width: 40,
+                          height: 40,
+                          borderRadius: "50%",
+                          border: "1px solid",
+                          borderColor: micColor,
+                          backgroundColor: isRecording
+                            ? "rgba(239, 68, 68, 0.12)"
+                            : "rgba(255, 255, 255, 0.95)",
+                          boxShadow: "none",
+                          animation: isRecording ? `${micPulse} 1.8s infinite` : "none",
+                          "&:hover": {
+                            borderColor: micColor,
+                            backgroundColor: isRecording
+                              ? "rgba(239, 68, 68, 0.18)"
+                              : "rgba(255, 255, 255, 1)",
+                          },
+                          "&:disabled": {
+                            borderColor: "text.disabled",
+                            color: "text.disabled",
+                            backgroundColor: "rgba(255, 255, 255, 0.7)",
+                          },
+                        }}
+                      >
+                        {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                </Box>
+              </Box>
+
+              {/* ── Image error (no thumbnails yet) ── */}
+              {imageError && uploadedImages.length === 0 && (
+                <Alert severity="error">{imageError}</Alert>
+              )}
+
+              {/* ── Image thumbnails ── */}
+              {uploadedImages.length > 0 && (
+                <Box>
+                  {imageError && (
+                    <Alert severity="error" sx={{ mb: 2 }}>{imageError}</Alert>
+                  )}
+                  <Stack spacing={2}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#4ECDC4" }}>
+                      🖼️ Image Inspiration
+                    </Typography>
+                    <Stack direction="row" spacing={2} sx={{ overflowX: "auto", pb: 1 }}>
+                      {uploadedImages.map((image) => (
+                        <Box
+                          key={image.id}
+                          sx={{
+                            minWidth: 160,
+                            maxWidth: 200,
+                            p: 1.5,
+                            borderRadius: 2,
+                            border: "1px solid",
+                            borderColor: "divider",
+                            backgroundColor: "rgba(255,255,255,0.9)",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Box
+                            component="img"
+                            src={image.previewUrl}
+                            alt={image.caption}
+                            sx={{
+                              width: "100%",
+                              height: 100,
+                              objectFit: "cover",
+                              borderRadius: 1.5,
+                              mb: 1,
+                            }}
+                          />
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ display: "block", mb: 1 }}
+                          >
+                            {image.caption}
+                          </Typography>
+                          <KiddoButton
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleRemoveImage(image.id)}
+                            sx={{
+                              width: "100%",
+                              color: "#1F2937",
+                              borderColor: "rgba(31,41,55,0.25)",
+                              backgroundColor: "rgba(255,255,255,0.85)",
+                              "&:hover": {
+                                backgroundColor: "rgba(255,255,255,1)",
+                                borderColor: "rgba(31,41,55,0.4)",
+                              },
+                            }}
+                          >
+                            Remove
+                          </KiddoButton>
+                        </Box>
+                      ))}
+                    </Stack>
+                  </Stack>
+                </Box>
+              )}
+
+              {/* ── Voice errors / live transcription ── */}
+              {voiceError && (
+                <Alert severity="warning" onClose={() => setVoiceError(null)}>
+                  {voiceError}
+                </Alert>
+              )}
+              {voiceTranscription && (
+                <Alert
+                  severity="info"
+                  onClose={() => setVoiceTranscription(null)}
+                  sx={{
+                    background:
+                      "linear-gradient(135deg, rgba(78,205,196,0.15), rgba(69,182,73,0.15))",
+                    borderLeft: "4px solid #4ECDC4",
+                  }}
+                >
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, color: "#4ECDC4" }}>
+                    🎤 Voice Input:
+                  </Typography>
+                  <Typography variant="body2">{voiceTranscription}</Typography>
+                </Alert>
+              )}
 
               {/* ── Generate + Reset ── */}
               <Stack direction="row" spacing={1.5} alignItems="stretch">
