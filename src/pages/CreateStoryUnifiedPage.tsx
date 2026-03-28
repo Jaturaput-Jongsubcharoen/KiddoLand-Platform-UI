@@ -260,6 +260,32 @@ export const CreateStoryUnifiedPage: React.FC = () => {
     }
   };
 
+  const handleReset = () => {
+    setTextPrompt("");
+    setVoiceTranscription(null);
+    setUploadedImages([]);
+    setImageError("");
+    setChildName("");
+    setExactAge(null);
+    setAgeBand(null);
+    setInterests([]);
+    setTone("");
+    setLearningGoal("Just for fun");
+    setStoryType("");
+    setStoryLength("medium");
+    setCurrentMood("");
+    setLanguage("en");
+    setDetectedSummary("");
+    setGeneratedStory("");
+    setRewrittenStory("");
+    setGeneratedStoryAudioSrc(null);
+    setRewrittenStoryAudioSrc(null);
+    setErrorMessage("");
+    setFavoriteMessage("");
+    setIsFavoriteSaved(false);
+    lastImagePromptRef.current = "";
+  };
+
   const handleSaveFavorite = async () => {
     const storyToSave = rewrittenStory || generatedStory;
     if (!storyToSave) {
@@ -433,6 +459,7 @@ export const CreateStoryUnifiedPage: React.FC = () => {
           setLanguage={setLanguage}
           detectedSummary={detectedSummary}
           onGenerate={handleGenerate}
+          onReset={handleReset}
           isTtsEnabled={isTtsEnabled}
           onToggleTts={() => setIsTtsEnabled((prev) => !prev)}
           isGenerating={isGenerating}
