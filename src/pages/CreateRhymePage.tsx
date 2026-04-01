@@ -40,6 +40,7 @@ import { LearningWorldScene } from "../components/LearningWorldScene";
 import BackButton from "../components/BackButton";
 import { useApp } from "../context/AppContext";
 import { generateRhyme, saveFavoriteStory } from "../utils/aiApi";
+import { saveRecommendationActivity, sanitizeTopic } from "../utils/recommendationActivity";
 import { TONES } from "../types/storyOptions";
 import {
   buildRhymePrompt,
@@ -431,6 +432,7 @@ const CreateRhymePage: React.FC = () => {
 
       const response = await generateRhyme(prompt, age, appState.accessToken);
       setRhyme(response.story);
+      saveRecommendationActivity(sanitizeTopic(topic.trim() || "rhyme"), age);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Unable to generate a rhyme.",
