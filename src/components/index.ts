@@ -12,6 +12,9 @@ export { GridSection } from './ui/GridSection';
 export { KiddoModal } from './ui/KiddoModal';
 export { LearningWorldScene } from './LearningWorldScene';
 
+// Home
+export { RecommendedBooksSection } from './home/RecommendedBooksSection';
+
 // Layout Components
 export { AppShellLayout } from './AppShellLayout';
 export { AuthLayout } from './layouts/AuthLayout';

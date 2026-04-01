@@ -5,6 +5,7 @@ import { useApp } from "../context/AppContext";
 import { UnifiedStoryInput } from "../components/story-creation/UnifiedStoryInput";
 import { StoryPreviewPanel } from "../components/story-creation/StoryPreviewPanel";
 import { generateStorySample, saveFavoriteStory } from "../utils/aiApi";
+import { deriveTopicFromStoryContext, saveRecommendationActivity } from "../utils/recommendationActivity";
 import {
   ageFromBand,
   buildDetectedSummary,
@@ -250,6 +251,12 @@ export const CreateStoryUnifiedPage: React.FC = () => {
         setGeneratedStory(response.output);
         setGeneratedStoryAudioSrc(ttsAudioSrc);
         setRewrittenStoryAudioSrc(null);
+        const recTopic = deriveTopicFromStoryContext({
+          interests,
+          storyType,
+          textPrompt: textPrompt.trim() || voiceTranscription?.trim() || "",
+        });
+        saveRecommendationActivity(recTopic, effectiveAge);
       }
     } catch (error) {
       const message =

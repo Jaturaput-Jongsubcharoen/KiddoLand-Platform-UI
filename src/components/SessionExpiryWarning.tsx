@@ -103,8 +103,7 @@ export const SessionExpiryWarning: React.FC = () => {
             </Typography>
           </Stack>
           <Typography variant="body2" color="text.secondary">
-            Your session will expire in {formatCountdown(remainingMs)}. Stay
-            logged in to keep working without interruption.
+           Stay logged in to keep working without interruption.
           </Typography>
           <Box>
             <LinearProgress
