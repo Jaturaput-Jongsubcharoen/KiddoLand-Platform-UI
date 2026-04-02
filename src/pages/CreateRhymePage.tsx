@@ -31,6 +31,8 @@ import {
   RotateCcw,
   Shuffle,
   BookOpen,
+  Pencil,
+  X,
 } from "lucide-react";
 import { ImageUploadButton } from "../components/story-creation/ImageUploadButton";
 import { buildImageContext, processImageFiles } from "../utils/imageProcessing";
@@ -130,6 +132,8 @@ const CreateRhymePage: React.FC = () => {
   const restartTimeoutRef = useRef<number | null>(null);
   const topicRef = useRef(topic);
   const lastImagePromptRef = useRef("");
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
 
   // Generation state
   const [rhyme, setRhyme] = useState("");
@@ -301,6 +305,43 @@ const CreateRhymePage: React.FC = () => {
       upsertImageContext(buildImageContext(next));
       return next;
     });
+  };
+
+  const handleReplaceClick = (id: string) => {
+    setReplaceTargetId(id);
+    replaceInputRef.current?.click();
+  };
+
+  const handleReplaceChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && replaceTargetId) {
+      await handleReplaceImage(replaceTargetId, file);
+    }
+    event.target.value = "";
+    setReplaceTargetId(null);
+  };
+
+  const handleReplaceImage = async (id: string, file: File) => {
+    setImageError("");
+    setIsProcessingImages(true);
+    try {
+      const [attachment] = await processImageFiles([file]);
+      setUploadedImages((prev) => {
+        const next = prev.map((img) => {
+          if (img.id !== id) return img;
+          URL.revokeObjectURL(img.previewUrl);
+          return { ...attachment, id: img.id };
+        });
+        upsertImageContext(buildImageContext(next));
+        return next;
+      });
+    } catch (error) {
+      setImageError(
+        error instanceof Error ? error.message : "Failed to process image. Please try again.",
+      );
+    } finally {
+      setIsProcessingImages(false);
+    }
   };
 
   // ── Derived mic UI values ─────────────────────────────────────────────────────
@@ -795,148 +836,223 @@ const CreateRhymePage: React.FC = () => {
                 </Box>
               </Stack>
 
-              {/* ── Topic textarea + mic/camera overlay ── */}
-              <Box sx={{ position: "relative" }}>
-                <TextField
-                  label="Rhyme topic (optional)"
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  placeholder='Describe what the rhyme should be about, or use Quick ideas above — or speak / upload a photo!'
-                  multiline
-                  minRows={2}
-                  fullWidth
+              {/* ── Topic + image preview in one bordered box (same pattern as story creation) ── */}
+              <Box
+                sx={{
+                  position: "relative",
+                  "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    top: -8,
+                    left: -8,
+                    right: -8,
+                    bottom: -8,
+                    background:
+                      "linear-gradient(135deg, rgba(255,107,53,0.1), rgba(78,205,196,0.1))",
+                    borderRadius: 2,
+                    zIndex: 0,
+                  },
+                }}
+              >
+                <Stack
                   sx={{
-                    "& .MuiInputBase-inputMultiline": {
-                      paddingRight: "5.5rem",
+                    position: "relative",
+                    zIndex: 1,
+                    border: "1px solid",
+                    borderColor: "rgba(0, 0, 0, 0.23)",
+                    borderRadius: 2,
+                    backgroundColor: "#fff",
+                    overflow: "hidden",
+                    "&:focus-within": {
+                      borderColor: "primary.main",
                     },
                   }}
-                />
-                {/* Icon buttons: camera + mic */}
-                <Box
-                  sx={{
-                    position: "absolute",
-                    right: 12,
-                    bottom: 12,
-                    zIndex: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                  }}
                 >
-                  <ImageUploadButton
-                    variant="icon"
-                    onAddImages={handleAddImages}
-                    imagesCount={uploadedImages.length}
-                    isProcessing={isProcessingImages}
-                  />
-                  <Tooltip title={micTooltipText}>
-                    <span>
-                      <IconButton
-                        onClick={handleMicClick}
-                        disabled={!isVoiceSupported}
-                        sx={{
-                          color: micColor,
-                          width: 40,
-                          height: 40,
-                          borderRadius: "50%",
-                          border: "1px solid",
-                          borderColor: micColor,
-                          backgroundColor: isRecording
-                            ? "rgba(239, 68, 68, 0.12)"
-                            : "rgba(255, 255, 255, 0.95)",
-                          boxShadow: "none",
-                          animation: isRecording ? `${micPulse} 1.8s infinite` : "none",
-                          "&:hover": {
-                            borderColor: micColor,
-                            backgroundColor: isRecording
-                              ? "rgba(239, 68, 68, 0.18)"
-                              : "rgba(255, 255, 255, 1)",
-                          },
-                          "&:disabled": {
-                            borderColor: "text.disabled",
-                            color: "text.disabled",
-                            backgroundColor: "rgba(255, 255, 255, 0.7)",
-                          },
-                        }}
+                  {uploadedImages.length > 0 && (
+                    <Box
+                      sx={{
+                        px: 1.5,
+                        pt: 1.5,
+                        pb: 1,
+                        backgroundColor: "#fff",
+                      }}
+                    >
+                      {imageError && (
+                        <Alert severity="error" sx={{ mb: 1 }}>
+                          {imageError}
+                        </Alert>
+                      )}
+                      <Stack
+                        direction="row"
+                        spacing={1.5}
+                        sx={{ overflowX: "auto", pb: 0.5, alignItems: "flex-start" }}
                       >
-                        {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                </Box>
-              </Box>
-
-              {/* ── Image error (no thumbnails yet) ── */}
-              {imageError && uploadedImages.length === 0 && (
-                <Alert severity="error">{imageError}</Alert>
-              )}
-
-              {/* ── Image thumbnails ── */}
-              {uploadedImages.length > 0 && (
-                <Box>
-                  {imageError && (
-                    <Alert severity="error" sx={{ mb: 2 }}>{imageError}</Alert>
-                  )}
-                  <Stack spacing={2}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#4ECDC4" }}>
-                      🖼️ Image Inspiration
-                    </Typography>
-                    <Stack direction="row" spacing={2} sx={{ overflowX: "auto", pb: 1 }}>
-                      {uploadedImages.map((image) => (
-                        <Box
-                          key={image.id}
-                          sx={{
-                            minWidth: 160,
-                            maxWidth: 200,
-                            p: 1.5,
-                            borderRadius: 2,
-                            border: "1px solid",
-                            borderColor: "divider",
-                            backgroundColor: "rgba(255,255,255,0.9)",
-                            flexShrink: 0,
-                          }}
-                        >
+                        {uploadedImages.map((image) => (
                           <Box
-                            component="img"
-                            src={image.previewUrl}
-                            alt={image.caption}
+                            key={image.id}
                             sx={{
-                              width: "100%",
-                              height: 100,
-                              objectFit: "cover",
-                              borderRadius: 1.5,
-                              mb: 1,
+                              position: "relative",
+                              flexShrink: 0,
+                              width: 128,
+                              borderRadius: 2,
+                              overflow: "hidden",
+                              bgcolor: "background.paper",
+                              border: "1px solid",
+                              borderColor: "divider",
+                              boxShadow: "0 1px 4px rgba(15,23,42,0.08)",
                             }}
-                          />
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ display: "block", mb: 1 }}
                           >
-                            {image.caption}
-                          </Typography>
-                          <KiddoButton
-                            variant="outlined"
-                            size="small"
-                            onClick={() => handleRemoveImage(image.id)}
+                            <Box
+                              component="img"
+                              src={image.previewUrl}
+                              alt={image.caption}
+                              title={image.caption}
+                              sx={{
+                                width: "100%",
+                                height: 128,
+                                objectFit: "cover",
+                                display: "block",
+                              }}
+                            />
+                            <Box
+                              sx={{
+                                position: "absolute",
+                                top: 6,
+                                right: 6,
+                                display: "flex",
+                                gap: 0.25,
+                              }}
+                            >
+                              <Tooltip title="Replace image">
+                                <IconButton
+                                  size="small"
+                                  aria-label="Replace image"
+                                  onClick={() => handleReplaceClick(image.id)}
+                                  sx={{
+                                    width: 28,
+                                    height: 28,
+                                    p: 0,
+                                    bgcolor: "rgba(255,255,255,0.95)",
+                                    color: "text.primary",
+                                    boxShadow: "0 1px 2px rgba(0,0,0,0.12)",
+                                    "&:hover": { bgcolor: "background.paper" },
+                                  }}
+                                >
+                                  <Pencil size={14} strokeWidth={2.25} />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Remove image">
+                                <IconButton
+                                  size="small"
+                                  aria-label="Remove image"
+                                  onClick={() => handleRemoveImage(image.id)}
+                                  sx={{
+                                    width: 28,
+                                    height: 28,
+                                    p: 0,
+                                    bgcolor: "rgba(255,255,255,0.95)",
+                                    color: "text.primary",
+                                    boxShadow: "0 1px 2px rgba(0,0,0,0.12)",
+                                    "&:hover": { bgcolor: "background.paper" },
+                                  }}
+                                >
+                                  <X size={14} strokeWidth={2.25} />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          </Box>
+                        ))}
+                      </Stack>
+                      <input
+                        ref={replaceInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleReplaceChange}
+                        style={{ display: "none" }}
+                      />
+                    </Box>
+                  )}
+
+                  <Box sx={{ position: "relative", bgcolor: "#fff" }}>
+                    <TextField
+                      // label="Rhyme topic (optional)"
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                      placeholder='Describe what the rhyme should be about, or use Quick ideas above — or speak / upload a photo!'
+                      multiline
+                      minRows={2}
+                      fullWidth
+                      sx={{
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          border: "none",
+                        },
+                        "& .MuiOutlinedInput-root": {
+                          backgroundColor: "transparent",
+                          borderRadius: 0,
+                        },
+                        "& .MuiInputBase-inputMultiline": {
+                          paddingRight: "5.5rem",
+                        },
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        right: 12,
+                        bottom: 12,
+                        zIndex: 2,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                      }}
+                    >
+                      <ImageUploadButton
+                        variant="icon"
+                        onAddImages={handleAddImages}
+                        imagesCount={uploadedImages.length}
+                        isProcessing={isProcessingImages}
+                      />
+                      <Tooltip title={micTooltipText}>
+                        <span>
+                          <IconButton
+                            onClick={handleMicClick}
+                            disabled={!isVoiceSupported}
                             sx={{
-                              width: "100%",
-                              color: "#1F2937",
-                              borderColor: "rgba(31,41,55,0.25)",
-                              backgroundColor: "rgba(255,255,255,0.85)",
+                              color: micColor,
+                              width: 40,
+                              height: 40,
+                              borderRadius: "50%",
+                              border: "1px solid",
+                              borderColor: micColor,
+                              backgroundColor: isRecording
+                                ? "rgba(239, 68, 68, 0.12)"
+                                : "rgba(255, 255, 255, 0.95)",
+                              boxShadow: "none",
+                              animation: isRecording ? `${micPulse} 1.8s infinite` : "none",
                               "&:hover": {
-                                backgroundColor: "rgba(255,255,255,1)",
-                                borderColor: "rgba(31,41,55,0.4)",
+                                borderColor: micColor,
+                                backgroundColor: isRecording
+                                  ? "rgba(239, 68, 68, 0.18)"
+                                  : "rgba(255, 255, 255, 1)",
+                              },
+                              "&:disabled": {
+                                borderColor: "text.disabled",
+                                color: "text.disabled",
+                                backgroundColor: "rgba(255, 255, 255, 0.7)",
                               },
                             }}
                           >
-                            Remove
-                          </KiddoButton>
-                        </Box>
-                      ))}
-                    </Stack>
-                  </Stack>
-                </Box>
+                            {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </Box>
+                  </Box>
+                </Stack>
+              </Box>
+
+              {imageError && uploadedImages.length === 0 && (
+                <Alert severity="error">{imageError}</Alert>
               )}
 
               {/* ── Voice errors / live transcription ── */}
