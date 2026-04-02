@@ -7,8 +7,8 @@ export const SharedNavBar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isHome = location.pathname === '/home';
-  const isHistory = location.pathname === '/home/story-history';
-  const isFavorite = location.pathname === '/home/story-favorites';
+  const isHistory = location.pathname === '/story-history';
+  const isFavorite = location.pathname === '/story-favorites';
 
   return (
     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>

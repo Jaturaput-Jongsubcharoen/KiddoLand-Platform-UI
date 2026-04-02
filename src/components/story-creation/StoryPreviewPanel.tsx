@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Box,
   Stack,
@@ -15,9 +14,10 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
+import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Heart } from "lucide-react";
+import { Heart, Copy, Check } from "lucide-react";
 import { KiddoCard } from "../index";
 import type { StoryVideoImageProvider } from "../../utils/aiApi";
 
@@ -60,43 +60,72 @@ export const StoryPreviewPanel: React.FC<StoryPreviewPanelProps> = ({
   storyVideoImageProvider = "gemini",
   onStoryVideoImageProviderChange,
 }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    const textToCopy = rewrittenStory || generatedStory;
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard not available
+    }
+  };
+
   return (
     <KiddoCard hoverEffect={false} sx={{ p: 4, position: "relative" }}>
-      {/* Heart Icon - Top Right */}
-      <Tooltip 
-        title={
-          isFavoriteSaved 
-            ? "Saved to Favorites!" 
-            : isSavingFavorite 
-            ? "Saving..." 
-            : "Save to Favorites"
-        }
-      >
-        <IconButton
-          onClick={onSaveFavorite}
-          disabled={isSavingFavorite || isFavoriteSaved}
-          sx={{
-            position: "absolute",
-            top: 16,
-            right: 16,
-            color: isFavoriteSaved ? "#E91E63" : "#999",
-            transition: "all 0.3s ease",
-            "&:hover": {
-              color: "#E91E63",
-              transform: "scale(1.15)",
-            },
-            "&:active": {
-              transform: "scale(0.95)",
-            },
-          }}
+      {/* Action buttons - Top Right */}
+      <Box sx={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 0.5 }}>
+        {/* Copy Button */}
+        <Tooltip title={copied ? "Copied!" : "Copy story"}>
+          <IconButton
+            onClick={handleCopy}
+            sx={{
+              color: copied ? "#4CAF50" : "#999",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                color: copied ? "#4CAF50" : "#555",
+                transform: "scale(1.15)",
+              },
+              "&:active": { transform: "scale(0.95)" },
+            }}
+          >
+            {copied ? <Check size={22} strokeWidth={2.5} /> : <Copy size={22} strokeWidth={2} />}
+          </IconButton>
+        </Tooltip>
+
+        {/* Save to Favorites Button */}
+        <Tooltip
+          title={
+            isFavoriteSaved
+              ? "Saved to Favorites!"
+              : isSavingFavorite
+              ? "Saving..."
+              : "Save to Favorites"
+          }
         >
-          <Heart 
-            size={32} 
-            fill={isFavoriteSaved ? "#E91E63" : "none"} 
-            strokeWidth={2}
-          />
-        </IconButton>
-      </Tooltip>
+          <IconButton
+            onClick={onSaveFavorite}
+            disabled={isSavingFavorite || isFavoriteSaved}
+            sx={{
+              color: isFavoriteSaved ? "#E91E63" : "#999",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                color: "#E91E63",
+                transform: "scale(1.15)",
+              },
+              "&:active": { transform: "scale(0.95)" },
+            }}
+          >
+            <Heart
+              size={24}
+              fill={isFavoriteSaved ? "#E91E63" : "none"}
+              strokeWidth={2}
+            />
+          </IconButton>
+        </Tooltip>
+      </Box>
 
       <Stack spacing={3}>
         {/* Feedback Messages */}
@@ -177,7 +206,7 @@ export const StoryPreviewPanel: React.FC<StoryPreviewPanelProps> = ({
 
         {/* Generated Story */}
         <Box>
-          <Typography variant="h5" sx={{ mb: 2, fontWeight: 600, pr: 5 }}>
+          <Typography variant="h5" sx={{ mb: 2, fontWeight: 600, pr: 10 }}>
             📖 Your Story
           </Typography>
           {generatedStoryAudioSrc && (

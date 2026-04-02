@@ -4,8 +4,10 @@ interface AiSampleResponse {
   tts_media_type?: string | null;
 }
 
-interface RhymeGenerateResponse {
+export interface RhymeGenerateResponse {
   story: string;
+  tts_audio_base64?: string | null;
+  tts_media_type?: string | null;
 }
 
 export interface StoryHistoryItem {
@@ -18,8 +20,13 @@ export interface StoryHistoryItem {
   is_favorite: boolean;
   mode: string;
   type: 'generate' | 'rewrite';
+  /** From API: story vs rhyme creation; omitted in older records → treat as story */
+  content_kind?: 'story' | 'rhyme';
   created_at: string | null;
   updated_at: string | null;
+  /** Set when TTS was generated and stored with this record */
+  tts_audio_base64?: string | null;
+  tts_media_type?: string | null;
 }
 
 interface StoryHistoryResponse {
@@ -28,6 +35,8 @@ interface StoryHistoryResponse {
 
 interface StoryRewriteResponse {
   story: string;
+  tts_audio_base64?: string | null;
+  tts_media_type?: string | null;
 }
 
 interface SaveFavoriteResponse {
@@ -85,7 +94,8 @@ export const generateStorySample = async (
 export const generateRhyme = async (
   prompt: string,
   age: number,
-  accessToken: string
+  accessToken: string,
+  includeTts = false,
 ): Promise<RhymeGenerateResponse> => {
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/story/generate-rhyme`, {
@@ -94,7 +104,7 @@ export const generateRhyme = async (
       'Content-Type': 'application/json',
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ prompt, age }),
+    body: JSON.stringify({ prompt, age, include_tts: includeTts }),
   });
 
   if (!response.ok) {
@@ -146,7 +156,8 @@ export const rewriteStory = async (
   originalStory: string,
   instruction: string,
   age: number,
-  accessToken: string
+  accessToken: string,
+  includeTts = true,
 ): Promise<StoryRewriteResponse> => {
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/story/rewrite`, {
@@ -159,6 +170,7 @@ export const rewriteStory = async (
       age,
       original_story: originalStory,
       instruction,
+      include_tts: includeTts,
     }),
   });
 
@@ -189,7 +201,8 @@ export const saveFavoriteStory = async (
   story: string,
   age: number,
   accessToken: string,
-  type: 'generate' | 'rewrite' = 'generate'
+  type: 'generate' | 'rewrite' = 'generate',
+  contentKind: 'story' | 'rhyme' = 'story',
 ): Promise<SaveFavoriteResponse> => {
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/ai/save-favorite`, {
@@ -203,6 +216,7 @@ export const saveFavoriteStory = async (
       story,
       age,
       type,
+      content_kind: contentKind,
     }),
   });
 

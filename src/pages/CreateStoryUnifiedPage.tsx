@@ -11,6 +11,7 @@ import {
   saveFavoriteStory,
   type StoryVideoImageProvider,
 } from "../utils/aiApi";
+import { deriveTopicFromStoryContext, saveRecommendationActivity } from "../utils/recommendationActivity";
 import {
   ageFromBand,
   buildDetectedSummary,
@@ -276,6 +277,12 @@ export const CreateStoryUnifiedPage: React.FC = () => {
         setGeneratedStory(response.output);
         setGeneratedStoryAudioSrc(ttsAudioSrc);
         setRewrittenStoryAudioSrc(null);
+        const recTopic = deriveTopicFromStoryContext({
+          interests,
+          storyType,
+          textPrompt: textPrompt.trim() || voiceTranscription?.trim() || "",
+        });
+        saveRecommendationActivity(recTopic, effectiveAge);
       }
     } catch (error) {
       const message =
@@ -284,6 +291,32 @@ export const CreateStoryUnifiedPage: React.FC = () => {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleReset = () => {
+    setTextPrompt("");
+    setVoiceTranscription(null);
+    setUploadedImages([]);
+    setImageError("");
+    setChildName("");
+    setExactAge(null);
+    setAgeBand(null);
+    setInterests([]);
+    setTone("");
+    setLearningGoal("Just for fun");
+    setStoryType("");
+    setStoryLength("medium");
+    setCurrentMood("");
+    setLanguage("en");
+    setDetectedSummary("");
+    setGeneratedStory("");
+    setRewrittenStory("");
+    setGeneratedStoryAudioSrc(null);
+    setRewrittenStoryAudioSrc(null);
+    setErrorMessage("");
+    setFavoriteMessage("");
+    setIsFavoriteSaved(false);
+    lastImagePromptRef.current = "";
   };
 
   const handleSaveFavorite = async () => {
@@ -495,6 +528,7 @@ export const CreateStoryUnifiedPage: React.FC = () => {
           setLanguage={setLanguage}
           detectedSummary={detectedSummary}
           onGenerate={handleGenerate}
+          onReset={handleReset}
           isTtsEnabled={isTtsEnabled}
           onToggleTts={() => setIsTtsEnabled((prev) => !prev)}
           isGenerating={isGenerating}

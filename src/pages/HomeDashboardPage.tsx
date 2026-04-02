@@ -5,21 +5,20 @@ import {
   BookOpen,
   Music,
   Gamepad2,
-  Clock,
+  Wand2,
 } from 'lucide-react';
 import {
   AppShellLayout,
-  KiddoCard,
   ActionTile,
-  IconBadge,
   GridSection,
+  RecommendedBooksSection,
 } from '../components';
 import { LearningWorldScene } from '../components/LearningWorldScene';
 
 const actionTiles = [
   {
     title: 'Create a Story',
-    icon: <BookOpen />,
+    icon: <Wand2  />,
     tooltip: 'Multiple ways to create: type, speak, upload image, or use guided form - all in one place',
     route: '/home/create-story',
   },
@@ -35,12 +34,6 @@ const actionTiles = [
     tooltip: 'Interactive educational games',
     route: '/home/play-learning-activity',
   },
-];
-
-const recentItems = [
-  { title: 'The Sleepy Space Turtle', time: '2 days ago' },
-  { title: 'Rainbow Word Rhyme', time: 'Last week' },
-  { title: 'Counting Adventure', time: 'Last week' },
 ];
 
 export const HomeDashboardPage: React.FC = () => {
@@ -83,29 +76,7 @@ export const HomeDashboardPage: React.FC = () => {
           ))}
         </GridSection>
 
-        <GridSection title="Recent Items">
-          {recentItems.map((item) => (
-                <KiddoCard key={item.title} hoverEffect sx={{ p: 3 }}>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <IconBadge
-                  icon={<Clock />}
-                  size="small"
-                  shape="rounded"
-                  bgcolor="rgba(249, 115, 22, 0.12)"
-                  iconColor="secondary.main"
-                />
-                <Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                    {item.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {item.time}
-                  </Typography>
-                </Box>
-              </Stack>
-            </KiddoCard>
-          ))}
-        </GridSection>
+        <RecommendedBooksSection />
         </Stack>
       </Box>
     </AppShellLayout>

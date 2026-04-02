@@ -10,7 +10,7 @@ import {
   IconButton,
   keyframes,
 } from "@mui/material";
-import { ChevronDown, ChevronUp, Shield, Mic, MicOff,Volume2,VolumeX } from "lucide-react";
+import { ChevronDown, ChevronUp, Shield, Mic, MicOff, Volume2, VolumeX, RotateCcw } from "lucide-react";
 import { KiddoCard, KiddoButton } from "../index";
 import { QuickStarterChips } from "./QuickStarterChips";
 import { ImageUploadButton } from "./ImageUploadButton";
@@ -50,6 +50,7 @@ interface UnifiedStoryInputProps {
   setLanguage: (language: string) => void;
   detectedSummary: string;
   onGenerate: () => void;
+  onReset?: () => void;
   isTtsEnabled: boolean;
   onToggleTts: () => void;
   isGenerating: boolean;
@@ -102,6 +103,7 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
   setLanguage,
   detectedSummary,
   onGenerate,
+  onReset,
   isTtsEnabled,
   onToggleTts,
   isGenerating,
@@ -748,49 +750,76 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
           </Alert>
         )}
 
-        {/* Generate/Refine Button - Big and colorful */}
-        <KiddoButton
-          variant="contained"
-          glow
-          onClick={onGenerate}
-          disabled={isGenerating || !canGenerate}
-          fullWidth
-          sx={{
-            py: 2,
-            fontSize: "1.2rem",
-            fontWeight: 800,
-            background: !canGenerate
-              ? "linear-gradient(135deg, #CCCCCC, #999999)"
-              : hasExistingStory
-                ? "linear-gradient(135deg, #9C27B0 0%, #E91E63 100%)"
-                : "linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)",
-            boxShadow: !canGenerate
-              ? "none"
-              : hasExistingStory
-                ? "0 6px 20px rgba(156,39,176,0.4)"
-                : "0 6px 20px rgba(255,107,53,0.4)",
-            "&:hover": {
+        {/* Generate/Refine + Reset Buttons */}
+        <Stack direction="row" spacing={1.5} alignItems="stretch">
+          <KiddoButton
+            variant="contained"
+            glow
+            onClick={onGenerate}
+            disabled={isGenerating || !canGenerate}
+            fullWidth
+            sx={{
+              py: 2,
+              fontSize: "1.2rem",
+              fontWeight: 800,
               background: !canGenerate
                 ? "linear-gradient(135deg, #CCCCCC, #999999)"
                 : hasExistingStory
-                  ? "linear-gradient(135deg, #E91E63 0%, #9C27B0 100%)"
-                  : "linear-gradient(135deg, #F7931E 0%, #FF6B35 100%)",
+                  ? "linear-gradient(135deg, #9C27B0 0%, #E91E63 100%)"
+                  : "linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)",
               boxShadow: !canGenerate
                 ? "none"
                 : hasExistingStory
-                  ? "0 8px 28px rgba(156,39,176,0.6)"
-                  : "0 8px 28px rgba(255,107,53,0.6)",
-            },
-          }}
-        >
-          {isGenerating
-            ? hasExistingStory
-              ? "✨ Refining Your Story..."
-              : "✨ Creating Your Magic Story..."
-            : hasExistingStory
-              ? "🔄 Refine Story"
-              : "🚀 Generate Story"}
-        </KiddoButton>
+                  ? "0 6px 20px rgba(156,39,176,0.4)"
+                  : "0 6px 20px rgba(255,107,53,0.4)",
+              "&:hover": {
+                background: !canGenerate
+                  ? "linear-gradient(135deg, #CCCCCC, #999999)"
+                  : hasExistingStory
+                    ? "linear-gradient(135deg, #E91E63 0%, #9C27B0 100%)"
+                    : "linear-gradient(135deg, #F7931E 0%, #FF6B35 100%)",
+                boxShadow: !canGenerate
+                  ? "none"
+                  : hasExistingStory
+                    ? "0 8px 28px rgba(156,39,176,0.6)"
+                    : "0 8px 28px rgba(255,107,53,0.6)",
+              },
+            }}
+          >
+            {isGenerating
+              ? hasExistingStory
+                ? "✨ Refining Your Story..."
+                : "✨ Creating Your Magic Story..."
+              : hasExistingStory
+                ? "🔄 Refine Story"
+                : "🚀 Generate Story"}
+          </KiddoButton>
+
+          {onReset && (
+            <Tooltip title="Reset all fields">
+              <span>
+                <KiddoButton
+                  variant="outlined"
+                  onClick={onReset}
+                  disabled={isGenerating}
+                  sx={{
+                    py: 2,
+                    px: 2.5,
+                    minWidth: "unset",
+                    borderColor: "divider",
+                    color: "text.secondary",
+                    "&:hover": {
+                      borderColor: "text.secondary",
+                      backgroundColor: "action.hover",
+                    },
+                  }}
+                >
+                  <RotateCcw size={20} />
+                </KiddoButton>
+              </span>
+            </Tooltip>
+          )}
+        </Stack>
       </Stack>
     </KiddoCard>
   );
