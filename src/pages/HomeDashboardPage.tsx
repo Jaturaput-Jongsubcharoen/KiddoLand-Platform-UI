@@ -14,6 +14,7 @@ import {
   RecommendedBooksSection,
 } from '../components';
 import { LearningWorldScene } from '../components/LearningWorldScene';
+import { useApp } from '../context/AppContext';
 
 const actionTiles = [
   {
@@ -38,6 +39,11 @@ const actionTiles = [
 
 export const HomeDashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const { appState } = useApp();
+  const userName =
+    appState.userName?.trim() ||
+    (appState.userEmail ? appState.userEmail.split('@')[0] : '') ||
+    'there';
 
   return (
     <AppShellLayout>
@@ -58,7 +64,7 @@ export const HomeDashboardPage: React.FC = () => {
       <Box sx={{ position: 'relative', zIndex: 1 }}>
         <Stack spacing={4}>
           <Typography variant="h4" sx={{ mb: 1 }}>
-            Welcome back
+            Welcome {userName}
           </Typography>
           <Typography variant="body1" color="text.secondary">
             Choose how you'd like to create content for your child

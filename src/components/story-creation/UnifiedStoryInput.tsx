@@ -10,7 +10,18 @@ import {
   IconButton,
   keyframes,
 } from "@mui/material";
-import { ChevronDown, ChevronUp, Shield, Mic, MicOff, Volume2, VolumeX, RotateCcw } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Shield,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  RotateCcw,
+  Pencil,
+  X,
+} from "lucide-react";
 import { KiddoCard, KiddoButton } from "../index";
 import { QuickStarterChips } from "./QuickStarterChips";
 import { ImageUploadButton } from "./ImageUploadButton";
@@ -454,7 +465,7 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
         {/* Error Message */}
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 
-        {/* Main Text Input - Now with fun styling */}
+        {/* Main text + image preview in one bordered box (matches “Tell me about…” area) */}
         <Box
           sx={{
             position: "relative",
@@ -472,252 +483,281 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
             },
           }}
         >
-          <TextField
-            label="💭 Tell me about the story you'd like to create..."
-            multiline
-            minRows={4}
-            maxRows={10}
-            value={textPrompt}
-            onChange={handleTextChange}
-            onKeyPress={handleKeyPress}
-            placeholder="Example: Tell an exciting adventure story about a brave turtle going to space..."
-            fullWidth
-            inputProps={{
-              style: {
-                caretColor: "#000000",
-                color: "#000000",
-                WebkitTextFillColor: "#000000",
-                opacity: 1,
-              },
-            }}
+          <Stack
             sx={{
               position: "relative",
               zIndex: 1,
-              "& .MuiInputBase-root": {
-                fontSize: "1rem",
-                lineHeight: 1.6,
-                backgroundColor: "rgba(255,255,255,0.9)",
-                borderRadius: 2,
+              border: "1px solid",
+              borderColor: "rgba(0, 0, 0, 0.23)",
+              borderRadius: 2,
+              backgroundColor: "#fff",
+              overflow: "hidden",
+              "&:focus-within": {
+                borderColor: "primary.main",
               },
-              "& .MuiInputBase-input": {
-                caretColor: "#000000",
-                color: "#000000",
-                WebkitTextFillColor: "#000000",
-                opacity: 1,
-              },
-              "& .MuiInputBase-inputMultiline": {
-                paddingRight: "5.5rem",
-                caretColor: "#000000",
-                color: "#000000",
-                WebkitTextFillColor: "#000000",
-                opacity: 1,
-              },
-              "& .MuiInputLabel-root": {
-                fontSize: "1rem",
-                fontWeight: 600,
-              },
-            }}
-          />
-          <Box
-            sx={{
-              position: "absolute",
-              right: 16,
-              bottom: 16,
-              zIndex: 2,
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
             }}
           >
-            <ImageUploadButton
-              variant="icon"
-              onAddImages={onAddImages}
-              imagesCount={uploadedImages.length}
-              isProcessing={isProcessingImages}
-            />
-            <Tooltip
-              title={
-                isTtsEnabled
-                  ? "Audio narration is ON (include_tts=true)"
-                  : "Audio narration is OFF (include_tts=false)"
-              }
-            >
-              <IconButton
-                aria-label={isTtsEnabled ? "Disable audio narration" : "Enable audio narration"}
-                aria-pressed={isTtsEnabled}
-                onClick={onToggleTts}
+            {/* Image preview on top (same flat white as prompt area) */}
+            {uploadedImages.length > 0 && (
+              <Box
                 sx={{
-                  color: ttsColor,
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  border: "1px solid",
-                  borderColor: ttsColor,
-                  backgroundColor: isTtsEnabled
-                    ? "rgba(255, 255, 255, 0.95)"
-                    : "rgba(239, 68, 68, 0.12)",
-                  boxShadow: "none",
-                  "&:hover": {
-                    borderColor: ttsColor,
-                    backgroundColor: isTtsEnabled
-                      ? "rgba(255, 255, 255, 1)"
-                      : "rgba(239, 68, 68, 0.18)",
-                  },
+                  px: 1.5,
+                  pt: 1.5,
+                  pb: 1,
+                  backgroundColor: "#fff",
                 }}
               >
-                {isTtsEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={micTooltipText}>
-              <span>
-                <IconButton
-                  aria-label={
-                    isRecording ? "Stop voice input" : "Start voice input"
-                  }
-                  aria-pressed={isRecording}
-                  onClick={handleMicClick}
-                  disabled={!isVoiceSupported}
-                  sx={{
-                    color: micColor,
-                    width: 40,
-                    height: 40,
-                    borderRadius: "50%",
-                    border: "1px solid",
-                    borderColor: micColor,
-                    backgroundColor: isRecording
-                      ? "rgba(239, 68, 68, 0.12)"
-                      : "rgba(255, 255, 255, 0.95)",
-                    boxShadow: "none",
-                    animation: isRecording
-                      ? `${micPulse} 1.8s infinite`
-                      : "none",
-                    "&:hover": {
-                      borderColor: micColor,
-                      backgroundColor: isRecording
-                        ? "rgba(239, 68, 68, 0.18)"
-                        : "rgba(255, 255, 255, 1)",
-                    },
-                    "&:disabled": {
-                      borderColor: "text.disabled",
-                      color: "text.disabled",
-                      backgroundColor: "rgba(255, 255, 255, 0.7)",
-                    },
-                  }}
+                {imageError && (
+                  <Alert severity="error" sx={{ mb: 1 }}>
+                    {imageError}
+                  </Alert>
+                )}
+                <Stack
+                  direction="row"
+                  spacing={1.5}
+                  sx={{ overflowX: "auto", pb: 0.5, alignItems: "flex-start" }}
                 >
-                  {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
-                </IconButton>
-              </span>
-            </Tooltip>
-          </Box>
+                  {uploadedImages.map((image) => (
+                    <Box
+                      key={image.id}
+                      sx={{
+                        position: "relative",
+                        flexShrink: 0,
+                        width: 128,
+                        borderRadius: 2,
+                        overflow: "hidden",
+                        bgcolor: "background.paper",
+                        border: "1px solid",
+                        borderColor: "divider",
+                        boxShadow: "0 1px 4px rgba(15,23,42,0.08)",
+                      }}
+                    >
+                      <Box
+                        component="img"
+                        src={image.previewUrl}
+                        alt={image.caption}
+                        title={image.caption}
+                        sx={{
+                          width: "100%",
+                          height: 128,
+                          objectFit: "cover",
+                          display: "block",
+                        }}
+                      />
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          top: 6,
+                          right: 6,
+                          display: "flex",
+                          gap: 0.25,
+                        }}
+                      >
+                        <Tooltip title="Replace image">
+                          <IconButton
+                            size="small"
+                            aria-label="Replace image"
+                            onClick={() => handleReplaceClick(image.id)}
+                            sx={{
+                              width: 28,
+                              height: 28,
+                              p: 0,
+                              bgcolor: "rgba(255,255,255,0.95)",
+                              color: "text.primary",
+                              boxShadow: "0 1px 2px rgba(0,0,0,0.12)",
+                              "&:hover": {
+                                bgcolor: "background.paper",
+                              },
+                            }}
+                          >
+                            <Pencil size={14} strokeWidth={2.25} />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Remove image">
+                          <IconButton
+                            size="small"
+                            aria-label="Remove image"
+                            onClick={() => onRemoveImage(image.id)}
+                            sx={{
+                              width: 28,
+                              height: 28,
+                              p: 0,
+                              bgcolor: "rgba(255,255,255,0.95)",
+                              color: "text.primary",
+                              boxShadow: "0 1px 2px rgba(0,0,0,0.12)",
+                              "&:hover": {
+                                bgcolor: "background.paper",
+                              },
+                            }}
+                          >
+                            <X size={14} strokeWidth={2.25} />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </Box>
+                  ))}
+                </Stack>
+                <input
+                  ref={replaceInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleReplaceChange}
+                  style={{ display: "none" }}
+                />
+              </Box>
+            )}
+
+            {/* Story prompt below preview, same outer border */}
+            <Box
+              sx={{
+                position: "relative",
+                bgcolor: "#fff",
+              }}
+            >
+              <TextField
+                // label="💭 Tell me about the story you'd like to create..."
+                multiline
+                minRows={4}
+                maxRows={10}
+                value={textPrompt}
+                onChange={handleTextChange}
+                onKeyPress={handleKeyPress}
+                placeholder="Example: Tell an exciting adventure story about a brave turtle going to space..."
+                fullWidth
+                inputProps={{
+                  style: {
+                    caretColor: "#000000",
+                    color: "#000000",
+                    WebkitTextFillColor: "#000000",
+                    opacity: 1,
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    border: "none",
+                  },
+                  "& .MuiOutlinedInput-root": {
+                    fontSize: "1rem",
+                    lineHeight: 1.6,
+                    backgroundColor: "transparent",
+                    borderRadius: 0,
+                  },
+                  "& .MuiInputBase-input": {
+                    caretColor: "#000000",
+                    color: "#000000",
+                    WebkitTextFillColor: "#000000",
+                    opacity: 1,
+                  },
+                  "& .MuiInputBase-inputMultiline": {
+                    paddingRight: "5.5rem",
+                    caretColor: "#000000",
+                    color: "#000000",
+                    WebkitTextFillColor: "#000000",
+                    opacity: 1,
+                  },
+                  "& .MuiInputLabel-root": {
+                    fontSize: "1rem",
+                    fontWeight: 600,
+                  },
+                }}
+              />
+              <Box
+                sx={{
+                  position: "absolute",
+                  right: 16,
+                  bottom: 16,
+                  zIndex: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                }}
+              >
+                <ImageUploadButton
+                  variant="icon"
+                  onAddImages={onAddImages}
+                  imagesCount={uploadedImages.length}
+                  isProcessing={isProcessingImages}
+                />
+                <Tooltip
+                  title={
+                    isTtsEnabled
+                      ? "Audio narration is ON (include_tts=true)"
+                      : "Audio narration is OFF (include_tts=false)"
+                  }
+                >
+                  <IconButton
+                    aria-label={isTtsEnabled ? "Disable audio narration" : "Enable audio narration"}
+                    aria-pressed={isTtsEnabled}
+                    onClick={onToggleTts}
+                    sx={{
+                      color: ttsColor,
+                      width: 40,
+                      height: 40,
+                      borderRadius: "50%",
+                      border: "1px solid",
+                      borderColor: ttsColor,
+                      backgroundColor: isTtsEnabled
+                        ? "rgba(255, 255, 255, 0.95)"
+                        : "rgba(239, 68, 68, 0.12)",
+                      boxShadow: "none",
+                      "&:hover": {
+                        borderColor: ttsColor,
+                        backgroundColor: isTtsEnabled
+                          ? "rgba(255, 255, 255, 1)"
+                          : "rgba(239, 68, 68, 0.18)",
+                      },
+                    }}
+                  >
+                    {isTtsEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title={micTooltipText}>
+                  <span>
+                    <IconButton
+                      aria-label={
+                        isRecording ? "Stop voice input" : "Start voice input"
+                      }
+                      aria-pressed={isRecording}
+                      onClick={handleMicClick}
+                      disabled={!isVoiceSupported}
+                      sx={{
+                        color: micColor,
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        border: "1px solid",
+                        borderColor: micColor,
+                        backgroundColor: isRecording
+                          ? "rgba(239, 68, 68, 0.12)"
+                          : "rgba(255, 255, 255, 0.95)",
+                        boxShadow: "none",
+                        animation: isRecording
+                          ? `${micPulse} 1.8s infinite`
+                          : "none",
+                        "&:hover": {
+                          borderColor: micColor,
+                          backgroundColor: isRecording
+                            ? "rgba(239, 68, 68, 0.18)"
+                            : "rgba(255, 255, 255, 1)",
+                        },
+                        "&:disabled": {
+                          borderColor: "text.disabled",
+                          color: "text.disabled",
+                          backgroundColor: "rgba(255, 255, 255, 0.7)",
+                        },
+                      }}
+                    >
+                      {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </Box>
+            </Box>
+          </Stack>
         </Box>
 
         {imageError && uploadedImages.length === 0 && (
           <Alert severity="error">{imageError}</Alert>
-        )}
-
-        {/* Image Preview Thumbnails */}
-        {uploadedImages.length > 0 && (
-          <Box>
-            {imageError && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {imageError}
-              </Alert>
-            )}
-            <Stack spacing={2}>
-              <Typography
-                variant="subtitle2"
-                sx={{ fontWeight: 700, color: "#FF6B35" }}
-              >
-                🖼️ Image Preview
-              </Typography>
-              <Stack
-                direction="row"
-                spacing={2}
-                sx={{ overflowX: "auto", pb: 1 }}
-              >
-                {uploadedImages.map((image) => (
-                  <Box
-                    key={image.id}
-                    sx={{
-                      minWidth: 180,
-                      maxWidth: 220,
-                      p: 1.5,
-                      borderRadius: 2,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      backgroundColor: "rgba(255,255,255,0.9)",
-                    }}
-                  >
-                    <Box
-                      component="img"
-                      src={image.previewUrl}
-                      alt={image.caption}
-                      sx={{
-                        width: "100%",
-                        height: 120,
-                        objectFit: "cover",
-                        borderRadius: 1.5,
-                        mb: 1,
-                      }}
-                    />
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block", mb: 1 }}
-                    >
-                      {image.caption}
-                    </Typography>
-                    <Stack direction="row" spacing={1}>
-                      <KiddoButton
-                        variant="outlined"
-                        size="small"
-                        onClick={() => onRemoveImage(image.id)}
-                        sx={{
-                          color: "#1F2937",
-                          borderColor: "rgba(31,41,55,0.25)",
-                          backgroundColor: "rgba(255,255,255,0.85)",
-                          "&:hover": {
-                            backgroundColor: "rgba(255,255,255,1)",
-                            borderColor: "rgba(31,41,55,0.4)",
-                          },
-                        }}
-                      >
-                        Remove Image
-                      </KiddoButton>
-                      <KiddoButton
-                        variant="outlined"
-                        size="small"
-                        onClick={() => handleReplaceClick(image.id)}
-                        sx={{
-                          color: "#1F2937",
-                          borderColor: "rgba(31,41,55,0.25)",
-                          backgroundColor: "rgba(255,255,255,0.85)",
-                          "&:hover": {
-                            backgroundColor: "rgba(255,255,255,1)",
-                            borderColor: "rgba(31,41,55,0.4)",
-                          },
-                        }}
-                      >
-                        Replace Image
-                      </KiddoButton>
-                    </Stack>
-                  </Box>
-                ))}
-              </Stack>
-              {imageAnalysis && (
-                <Typography variant="body2" color="text.secondary">
-                  Image context: {imageAnalysis}
-                </Typography>
-              )}
-            </Stack>
-            <input
-              ref={replaceInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleReplaceChange}
-              style={{ display: "none" }}
-            />
-          </Box>
         )}
 
         {/* Voice Transcription Display */}
