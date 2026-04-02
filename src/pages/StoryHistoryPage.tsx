@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
   Button,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -11,15 +12,23 @@ import {
   Grid,
   IconButton,
   Stack,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { X, Minimize2, Maximize2, Trash2, Heart } from "lucide-react";
 import { AppShellLayout, KiddoCard, KiddoButton } from "../components";
-import BackButton from "../components/BackButton";
 import { useApp } from "../context/AppContext";
 import { getStoryHistory, StoryHistoryItem, deleteStory, toggleFavorite } from "../utils/aiApi";
+import {
+  getHistoryCardTitle,
+  getContentKind,
+  getHistoryAudioSrc,
+  matchesHistoryFilter,
+  type HistoryContentKindFilter,
+} from "../utils/historyDisplay";
 
 const formatDate = (value: string | null): string => {
   if (!value) return "Unknown";
@@ -49,9 +58,15 @@ export const StoryHistoryPage: React.FC = () => {
   // 🔥 Default = minimized (medium size)
   const [isFullScreen, setIsFullScreen] = useState(false);
   
+  const [kindFilter, setKindFilter] = useState<HistoryContentKindFilter>("all");
+
   // Pagination state
   const [displayCount, setDisplayCount] = useState(12);
   const ITEMS_PER_PAGE = 12;
+
+  useEffect(() => {
+    setDisplayCount(ITEMS_PER_PAGE);
+  }, [kindFilter]);
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -76,12 +91,21 @@ export const StoryHistoryPage: React.FC = () => {
     loadHistory();
   }, [appState.accessToken]);
 
-  const sortedItems = [...items].sort(
-    (a, b) => toTimestamp(b.created_at) - toTimestamp(a.created_at),
+  const sortedItems = useMemo(
+    () =>
+      [...items].sort(
+        (a, b) => toTimestamp(b.created_at) - toTimestamp(a.created_at),
+      ),
+    [items],
   );
-  
-  const displayedItems = sortedItems.slice(0, displayCount);
-  const hasMore = displayCount < sortedItems.length;
+
+  const filteredItems = useMemo(
+    () => sortedItems.filter((it) => matchesHistoryFilter(it, kindFilter)),
+    [sortedItems, kindFilter],
+  );
+
+  const displayedItems = filteredItems.slice(0, displayCount);
+  const hasMore = displayCount < filteredItems.length;
 
   const handleCloseDialog = () => {
     setSelectedItem(null);
@@ -163,10 +187,36 @@ export const StoryHistoryPage: React.FC = () => {
   return (
     <AppShellLayout>
       <Stack spacing={3}>
-          <Typography variant="h4">Story History</Typography>
+        <Box>
+          <Typography variant="h4">History</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Newest stories appear first.
+            Newest items appear first. Filter by stories or rhymes.
           </Typography>
+        </Box>
+
+        {!isLoading && sortedItems.length > 0 && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              width: "100%",
+            }}
+          >
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              value={kindFilter}
+              onChange={(_, v: HistoryContentKindFilter | null) => v && setKindFilter(v)}
+              aria-label="Filter by content type"
+            >
+              <ToggleButton value="all">All</ToggleButton>
+              <ToggleButton value="story">Stories</ToggleButton>
+              <ToggleButton value="rhyme">Rhymes</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+        )}
+
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 
         {isLoading ? (
@@ -179,6 +229,10 @@ export const StoryHistoryPage: React.FC = () => {
         ) : sortedItems.length === 0 ? (
           <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
             <Typography>No story history yet.</Typography>
+          </KiddoCard>
+        ) : filteredItems.length === 0 ? (
+          <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
+            <Typography>No items match this filter.</Typography>
           </KiddoCard>
         ) : (
           <>
@@ -238,10 +292,10 @@ export const StoryHistoryPage: React.FC = () => {
                       <IconButton
                         onClick={(e) => handleDeleteClick(e, item)}
                         sx={{
-                          color: "#999",
+                          color: "text.secondary",
                           transition: "all 0.2s ease",
                           "&:hover": {
-                            color: "#E91E63",
+                            color: "error.main",
                             transform: "scale(1.1)",
                           },
                         }}
@@ -252,22 +306,15 @@ export const StoryHistoryPage: React.FC = () => {
 
                     <Stack spacing={1}>
                       <Typography variant="h6" sx={{ fontWeight: 700, pr: 8 }}>
-                        {item.child_name}'s Story
+                        {getHistoryCardTitle(item)}
                       </Typography>
+
+                      {item.type === "rewrite" && (
+                        <Chip size="small" label="Rewritten" variant="outlined" />
+                      )}
 
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
                         Age {item.age ?? "N/A"}
-                      </Typography>
-
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontSize: "0.85rem",
-                          color: "text.secondary",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {item.type}
                       </Typography>
                     </Stack>
 
@@ -302,7 +349,7 @@ export const StoryHistoryPage: React.FC = () => {
                     },
                   }}
                 >
-                  Load More Stories
+                  Load more
                 </KiddoButton>
               </Box>
             )}
@@ -358,7 +405,11 @@ export const StoryHistoryPage: React.FC = () => {
               </IconButton>
 
               <Box sx={{ flex: 1, textAlign: "center" }}>
-                <Typography fontWeight={600}>Story Details</Typography>
+                <Typography fontWeight={600}>
+                  {selectedItem && getContentKind(selectedItem) === "rhyme"
+                    ? "Rhyme details"
+                    : "Story details"}
+                </Typography>
               </Box>
 
               {/* RIGHT: Minimize / Maximize */}
@@ -373,11 +424,24 @@ export const StoryHistoryPage: React.FC = () => {
 
             {/* Metadata */}
             <Box sx={{ px: 4, py: 3 }}>
+              {selectedItem.type === "rewrite" && (
+                <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                  <Chip size="small" label="Rewritten" variant="outlined" />
+                </Stack>
+              )}
               <Typography color="text.secondary">
-                {formatDate(selectedItem.created_at)} | {selectedItem.type} |
-                Age {selectedItem.age ?? "N/A"} | Child{" "}
+                {formatDate(selectedItem.created_at)} | Age {selectedItem.age ?? "N/A"} |{" "}
                 {selectedItem.child_name}
               </Typography>
+              {getHistoryAudioSrc(selectedItem) && (
+                <Box sx={{ mt: 2 }}>
+                  <audio
+                    controls
+                    src={getHistoryAudioSrc(selectedItem) ?? undefined}
+                    style={{ width: "100%", maxWidth: 480 }}
+                  />
+                </Box>
+              )}
             </Box>
 
             {/* Story Content */}
@@ -404,10 +468,10 @@ export const StoryHistoryPage: React.FC = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Delete Story?</DialogTitle>
+        <DialogTitle>Delete this item?</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete "{itemToDelete?.child_name}'s Story"?
+            Are you sure you want to delete &quot;{itemToDelete ? getHistoryCardTitle(itemToDelete) : ""}&quot;?
             This action cannot be undone.
           </Typography>
           {deleteError && (
