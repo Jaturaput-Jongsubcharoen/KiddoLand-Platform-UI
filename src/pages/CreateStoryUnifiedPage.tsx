@@ -7,6 +7,7 @@ import { StoryPreviewPanel } from "../components/story-creation/StoryPreviewPane
 import {
   generateStorySample,
   generateStoryVideo,
+  parseStoryTtsDataUrl,
   saveFavoriteStory,
   type StoryVideoImageProvider,
 } from "../utils/aiApi";
@@ -397,9 +398,13 @@ export const CreateStoryUnifiedPage: React.FC = () => {
     }
     try {
       setIsStoryVideoLoading(true);
+      const audioSrc = rewrittenStory ? rewrittenStoryAudioSrc : generatedStoryAudioSrc;
+      const tts = parseStoryTtsDataUrl(audioSrc);
       const blob = await generateStoryVideo(storyText, appState.accessToken, {
         includeVoice: includeStoryVideoVoice,
         imageProvider: storyVideoImageProvider,
+        ttsAudioBase64: includeStoryVideoVoice ? tts?.ttsAudioBase64 : null,
+        ttsMediaType: includeStoryVideoVoice ? tts?.ttsMediaType : null,
       });
       const url = URL.createObjectURL(blob);
       setStoryVideoUrl(url);

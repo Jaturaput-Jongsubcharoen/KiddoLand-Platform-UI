@@ -249,28 +249,51 @@ export const getFavoriteStories = async (accessToken: string): Promise<StoryHist
 
 export type StoryVideoImageProvider = 'gemini' | 'huggingface';
 
+/** Parse data: URL from story TTS playback (tts_audio_base64 + tts_media_type). */
+export function parseStoryTtsDataUrl(
+  dataUrl: string | null | undefined
+): { ttsAudioBase64: string; ttsMediaType: string } | null {
+  if (!dataUrl || !dataUrl.startsWith('data:')) return null;
+  const comma = dataUrl.indexOf(',');
+  if (comma < 0) return null;
+  const meta = dataUrl.slice(5, comma);
+  const [mimePart] = meta.split(';');
+  const mime = mimePart?.trim() || 'audio/mpeg';
+  if (!meta.toLowerCase().includes('base64')) return null;
+  const b64 = dataUrl.slice(comma + 1).replace(/\s/g, '');
+  if (!b64) return null;
+  return { ttsAudioBase64: b64, ttsMediaType: mime };
+}
+
 export const generateStoryVideo = async (
   story: string,
   accessToken: string,
   options?: {
     includeVoice?: boolean;
     imageProvider?: StoryVideoImageProvider;
+    ttsAudioBase64?: string | null;
+    ttsMediaType?: string | null;
   }
 ): Promise<Blob> => {
   const includeVoice = options?.includeVoice ?? true;
   const imageProvider = options?.imageProvider ?? 'gemini';
   const apiBaseUrl = resolveApiBaseUrl();
+  const body: Record<string, unknown> = {
+    story,
+    include_voice: includeVoice,
+    image_provider: imageProvider,
+  };
+  if (includeVoice && options?.ttsAudioBase64) {
+    body.tts_audio_base64 = options.ttsAudioBase64;
+    body.tts_media_type = options.ttsMediaType ?? 'audio/mpeg';
+  }
   const response = await fetch(`${apiBaseUrl}/generate-video`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({
-      story,
-      include_voice: includeVoice,
-      image_provider: imageProvider,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
