@@ -182,6 +182,8 @@ export interface BuildRhymePromptParams {
 /**
  * Builds a single prompt string for POST /story/generate-rhyme.
  * Always keeps "for {Name}, age {n}" so backend name + age extraction succeeds.
+ * Request body may also include `include_tts: boolean` (optional); when true, the API
+ * returns `tts_audio_base64` and `tts_media_type` like the story flow.
  */
 export function buildRhymePrompt(params: BuildRhymePromptParams): string {
   const {

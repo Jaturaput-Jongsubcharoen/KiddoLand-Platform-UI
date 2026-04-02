@@ -1,12 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
+  Chip,
   CircularProgress,
   Dialog,
   Grid,
   IconButton,
   Stack,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import ReactMarkdown from "react-markdown";
@@ -19,6 +22,13 @@ import {
   getFavoriteStories,
   toggleFavorite,
 } from "../utils/aiApi";
+import {
+  getHistoryCardTitle,
+  getContentKind,
+  getHistoryAudioSrc,
+  matchesHistoryFilter,
+  type HistoryContentKindFilter,
+} from "../utils/historyDisplay";
 
 const formatDate = (value: string | null): string => {
   if (!value) return "Unknown";
@@ -42,9 +52,15 @@ export const StoryFavoritesPage: React.FC = () => {
   );
   const [isFullScreen, setIsFullScreen] = useState(false);
 
+  const [kindFilter, setKindFilter] = useState<HistoryContentKindFilter>("all");
+
   // Pagination state
   const [displayCount, setDisplayCount] = useState(12);
   const ITEMS_PER_PAGE = 12;
+
+  useEffect(() => {
+    setDisplayCount(ITEMS_PER_PAGE);
+  }, [kindFilter]);
 
   useEffect(() => {
     const loadFavorites = async () => {
@@ -69,12 +85,21 @@ export const StoryFavoritesPage: React.FC = () => {
     loadFavorites();
   }, [appState.accessToken]);
 
-  const sortedItems = [...items].sort(
-    (a, b) => toTimestamp(b.created_at) - toTimestamp(a.created_at),
+  const sortedItems = useMemo(
+    () =>
+      [...items].sort(
+        (a, b) => toTimestamp(b.created_at) - toTimestamp(a.created_at),
+      ),
+    [items],
   );
 
-  const displayedItems = sortedItems.slice(0, displayCount);
-  const hasMore = displayCount < sortedItems.length;
+  const filteredItems = useMemo(
+    () => sortedItems.filter((it) => matchesHistoryFilter(it, kindFilter)),
+    [sortedItems, kindFilter],
+  );
+
+  const displayedItems = filteredItems.slice(0, displayCount);
+  const hasMore = displayCount < filteredItems.length;
 
   const handleCloseDialog = () => {
     setSelectedItem(null);
@@ -122,11 +147,35 @@ export const StoryFavoritesPage: React.FC = () => {
   return (
     <AppShellLayout>
       <Stack spacing={3}>
-        <Typography variant="h4">Favourite Stories</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Your saved stories appear here. Click the heart to remove from
-          favorites.
-        </Typography>
+        <Box>
+          <Typography variant="h4">Favourites</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Saved stories and rhymes. Click the heart to remove from favorites.
+          </Typography>
+        </Box>
+
+        {!isLoading && sortedItems.length > 0 && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              width: "100%",
+            }}
+          >
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              value={kindFilter}
+              onChange={(_, v: HistoryContentKindFilter | null) => v && setKindFilter(v)}
+              aria-label="Filter favorites by content type"
+            >
+              <ToggleButton value="all">All</ToggleButton>
+              <ToggleButton value="story">Stories</ToggleButton>
+              <ToggleButton value="rhyme">Rhymes</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+        )}
 
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 
@@ -140,8 +189,12 @@ export const StoryFavoritesPage: React.FC = () => {
         ) : sortedItems.length === 0 ? (
           <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
             <Typography>
-              No favorite stories yet. Add some from your Story History!
+              No favorites yet. Save from story or rhyme creation, or from history.
             </Typography>
+          </KiddoCard>
+        ) : filteredItems.length === 0 ? (
+          <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
+            <Typography>No favorites match this filter.</Typography>
           </KiddoCard>
         ) : (
           <>
@@ -181,22 +234,15 @@ export const StoryFavoritesPage: React.FC = () => {
 
                     <Stack spacing={1}>
                       <Typography variant="h6" sx={{ fontWeight: 700, pr: 5 }}>
-                        {item.child_name}'s Story
+                        {getHistoryCardTitle(item)}
                       </Typography>
+
+                      {item.type === "rewrite" && (
+                        <Chip size="small" label="Rewritten" variant="outlined" />
+                      )}
 
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
                         Age {item.age ?? "N/A"}
-                      </Typography>
-
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontSize: "0.85rem",
-                          color: "text.secondary",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {item.type}
                       </Typography>
                     </Stack>
 
@@ -289,7 +335,11 @@ export const StoryFavoritesPage: React.FC = () => {
               </IconButton>
 
               <Box sx={{ flex: 1, textAlign: "center" }}>
-                <Typography fontWeight={600}>Favorite Story</Typography>
+                <Typography fontWeight={600}>
+                  {selectedItem && getContentKind(selectedItem) === "rhyme"
+                    ? "Favorite rhyme"
+                    : "Favorite story"}
+                </Typography>
               </Box>
 
               {/* RIGHT: Remove from Favorites + Minimize/Maximize */}
@@ -317,11 +367,24 @@ export const StoryFavoritesPage: React.FC = () => {
 
             {/* Metadata */}
             <Box sx={{ px: 4, py: 3 }}>
+              {selectedItem.type === "rewrite" && (
+                <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                  <Chip size="small" label="Rewritten" variant="outlined" />
+                </Stack>
+              )}
               <Typography color="text.secondary">
-                {formatDate(selectedItem.created_at)} | {selectedItem.type} |
-                Age {selectedItem.age ?? "N/A"} | Child{" "}
+                {formatDate(selectedItem.created_at)} | Age {selectedItem.age ?? "N/A"} |{" "}
                 {selectedItem.child_name}
               </Typography>
+              {getHistoryAudioSrc(selectedItem) && (
+                <Box sx={{ mt: 2 }}>
+                  <audio
+                    controls
+                    src={getHistoryAudioSrc(selectedItem) ?? undefined}
+                    style={{ width: "100%", maxWidth: 480 }}
+                  />
+                </Box>
+              )}
             </Box>
 
             {/* Story Content */}

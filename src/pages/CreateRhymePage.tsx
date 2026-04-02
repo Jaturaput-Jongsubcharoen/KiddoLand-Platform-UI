@@ -6,6 +6,7 @@ import {
   Collapse,
   Divider,
   FormControl,
+  FormControlLabel,
   IconButton,
   InputLabel,
   keyframes,
@@ -13,6 +14,7 @@ import {
   Select,
   SelectChangeEvent,
   Slider,
+  Switch,
   Stack,
   TextField,
   ToggleButton,
@@ -31,6 +33,8 @@ import {
   RotateCcw,
   Shuffle,
   BookOpen,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { ImageUploadButton } from "../components/story-creation/ImageUploadButton";
 import { buildImageContext, processImageFiles } from "../utils/imageProcessing";
@@ -133,6 +137,8 @@ const CreateRhymePage: React.FC = () => {
 
   // Generation state
   const [rhyme, setRhyme] = useState("");
+  const [rhymeAudioSrc, setRhymeAudioSrc] = useState<string | null>(null);
+  const [readAloudEnabled, setReadAloudEnabled] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -391,6 +397,7 @@ const CreateRhymePage: React.FC = () => {
     });
     setImageError("");
     lastImagePromptRef.current = "";
+    setRhymeAudioSrc(null);
   };
 
   const handleGenerate = async () => {
@@ -412,6 +419,7 @@ const CreateRhymePage: React.FC = () => {
       setIsFavoriteSaved(false);
       setFavoriteMessage("");
       setCopied(false);
+      setRhymeAudioSrc(null);
 
       const purposeInstruction =
         RHYME_PURPOSES.find((p) => p.value === rhymePurpose)?.instruction ?? "";
@@ -430,8 +438,20 @@ const CreateRhymePage: React.FC = () => {
         learningInstruction,
       });
 
-      const response = await generateRhyme(prompt, age, appState.accessToken);
+      const response = await generateRhyme(
+        prompt,
+        age,
+        appState.accessToken,
+        readAloudEnabled,
+      );
       setRhyme(response.story);
+      const ttsSrc =
+        readAloudEnabled &&
+        response.tts_audio_base64 &&
+        response.tts_media_type
+          ? `data:${response.tts_media_type};base64,${response.tts_audio_base64}`
+          : null;
+      setRhymeAudioSrc(ttsSrc);
       saveRecommendationActivity(sanitizeTopic(topic.trim() || "rhyme"), age);
     } catch (error) {
       setErrorMessage(
@@ -453,6 +473,7 @@ const CreateRhymePage: React.FC = () => {
         age,
         appState.accessToken,
         "generate",
+        "rhyme",
       );
       if (result.saved) {
         setIsFavoriteSaved(true);
@@ -962,6 +983,31 @@ const CreateRhymePage: React.FC = () => {
                 </Alert>
               )}
 
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={readAloudEnabled}
+                    onChange={(_, checked) => setReadAloudEnabled(checked)}
+                    color="primary"
+                    inputProps={{ "aria-label": "Read aloud" }}
+                  />
+                }
+                label={
+                  <Stack direction="row" spacing={0.75} alignItems="center">
+                    {readAloudEnabled ? (
+                      <Volume2 size={18} aria-hidden />
+                    ) : (
+                      <VolumeX size={18} aria-hidden />
+                    )}
+                    <Typography variant="body2">Read aloud (request narration)</Typography>
+                  </Stack>
+                }
+                sx={{ alignItems: "center", ml: 0 }}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: -1.5 }}>
+                When on, the API may return audio. If narration is unavailable, you still get the rhyme text.
+              </Typography>
+
               {/* ── Generate + Reset ── */}
               <Stack direction="row" spacing={1.5} alignItems="stretch">
                 <KiddoButton
@@ -1068,6 +1114,14 @@ const CreateRhymePage: React.FC = () => {
                 <Typography variant="h5" sx={{ fontWeight: 700, pr: 12 }}>
                   Your Rhyme
                 </Typography>
+
+                {rhymeAudioSrc && (
+                  <Box sx={{ pr: { xs: 0, sm: 10 } }}>
+                    <audio controls preload="none" src={rhymeAudioSrc} style={{ width: "100%", maxWidth: 480 }}>
+                      Your browser does not support audio playback.
+                    </audio>
+                  </Box>
+                )}
 
                 {/* Applied-settings tags */}
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
