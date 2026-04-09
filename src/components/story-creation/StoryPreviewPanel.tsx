@@ -7,8 +7,6 @@ import {
   Tooltip,
   Button,
   LinearProgress,
-  FormControlLabel,
-  Checkbox,
   FormControl,
   InputLabel,
   Select,
@@ -35,8 +33,9 @@ interface StoryPreviewPanelProps {
   isStoryVideoLoading?: boolean;
   storyVideoUrl?: string | null;
   storyVideoError?: string;
-  includeStoryVideoVoice?: boolean;
-  onToggleStoryVideoVoice?: (next: boolean) => void;
+  // To re-enable UI toggle in future:
+  // includeStoryVideoVoice?: boolean;
+  // onToggleStoryVideoVoice?: (next: boolean) => void;
   storyVideoImageProvider?: StoryVideoImageProvider;
   onStoryVideoImageProviderChange?: (next: StoryVideoImageProvider) => void;
 }
@@ -55,8 +54,8 @@ export const StoryPreviewPanel: React.FC<StoryPreviewPanelProps> = ({
   isStoryVideoLoading = false,
   storyVideoUrl = null,
   storyVideoError = "",
-  includeStoryVideoVoice = false,
-  onToggleStoryVideoVoice,
+  // includeStoryVideoVoice = true,
+  // onToggleStoryVideoVoice,
   storyVideoImageProvider = "gemini",
   onStoryVideoImageProviderChange,
 }) => {
@@ -173,18 +172,23 @@ export const StoryPreviewPanel: React.FC<StoryPreviewPanelProps> = ({
                   </Select>
                 </FormControl>
               )}
-              {onToggleStoryVideoVoice && (
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={includeStoryVideoVoice}
-                      onChange={(e) => onToggleStoryVideoVoice(e.target.checked)}
-                      disabled={isStoryVideoLoading}
-                    />
-                  }
-                  label="Include voice (narration)"
-                />
-              )}
+              {/*
+                Narration checkbox intentionally hidden per product decision.
+                Keep this block for easy restore in future.
+
+                {onToggleStoryVideoVoice && (
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={includeStoryVideoVoice}
+                        onChange={(e) => onToggleStoryVideoVoice(e.target.checked)}
+                        disabled={isStoryVideoLoading}
+                      />
+                    }
+                    label="Include voice (narration)"
+                  />
+                )}
+              */}
             </Stack>
             {isStoryVideoLoading && <LinearProgress />}
             {storyVideoUrl && (

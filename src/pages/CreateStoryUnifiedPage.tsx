@@ -69,7 +69,8 @@ export const CreateStoryUnifiedPage: React.FC = () => {
   const [isStoryVideoLoading, setIsStoryVideoLoading] = useState(false);
   const [storyVideoUrl, setStoryVideoUrl] = useState<string | null>(null);
   const [storyVideoError, setStoryVideoError] = useState("");
-  const [includeStoryVideoVoice, setIncludeStoryVideoVoice] = useState(true);
+  // To re-enable Story Video narration toggle in future:
+  // const [includeStoryVideoVoice, setIncludeStoryVideoVoice] = useState(true);
   const [storyVideoImageProvider, setStoryVideoImageProvider] =
     useState<StoryVideoImageProvider>("gemini");
 
@@ -289,7 +290,10 @@ export const CreateStoryUnifiedPage: React.FC = () => {
       const response = await generateStorySample(
         combinedPrompt,
         appState.accessToken,
-        false
+        // Story read-aloud is currently forced ON by product decision.
+        true
+        // To restore UI toggle behavior:
+        // isTtsEnabled
       );
 
       const ttsAudioSrc =
@@ -465,10 +469,13 @@ export const CreateStoryUnifiedPage: React.FC = () => {
       const audioSrc = rewrittenStory ? rewrittenStoryAudioSrc : generatedStoryAudioSrc;
       const tts = parseStoryTtsDataUrl(audioSrc);
       const blob = await generateStoryVideo(storyText, appState.accessToken, {
-        includeVoice: includeStoryVideoVoice,
+        // Narration is currently forced ON by product decision.
+        includeVoice: true,
+        // To restore toggle-driven behavior:
+        // includeVoice: includeStoryVideoVoice,
         imageProvider: storyVideoImageProvider,
-        ttsAudioBase64: includeStoryVideoVoice ? tts?.ttsAudioBase64 : null,
-        ttsMediaType: includeStoryVideoVoice ? tts?.ttsMediaType : null,
+        ttsAudioBase64: tts?.ttsAudioBase64 ?? null,
+        ttsMediaType: tts?.ttsMediaType ?? null,
       });
       const url = URL.createObjectURL(blob);
       setStoryVideoUrl(url);
@@ -526,6 +533,10 @@ export const CreateStoryUnifiedPage: React.FC = () => {
           <BackButton to={mode === "institution" ? "/institution" : "/home"} />
         </Box>
         {/* Main Input Component */}
+        {/* To restore "Read aloud (request narration)" in Story Input:
+            isTtsEnabled={isTtsEnabled}
+            onToggleTts={setIsTtsEnabled}
+        */}
         <UnifiedStoryInput
           mode={mode}
           institutionContext={
@@ -578,6 +589,10 @@ export const CreateStoryUnifiedPage: React.FC = () => {
         />
 
         {/* Story Preview and Refinement */}
+        {/* To restore "Include voice (narration)" in Story Video controls:
+            includeStoryVideoVoice={includeStoryVideoVoice}
+            onToggleStoryVideoVoice={setIncludeStoryVideoVoice}
+        */}
         {generatedStory && (
           <StoryPreviewPanel
             generatedStory={generatedStory}
@@ -593,8 +608,6 @@ export const CreateStoryUnifiedPage: React.FC = () => {
             isStoryVideoLoading={isStoryVideoLoading}
             storyVideoUrl={storyVideoUrl}
             storyVideoError={storyVideoError}
-            includeStoryVideoVoice={includeStoryVideoVoice}
-            onToggleStoryVideoVoice={setIncludeStoryVideoVoice}
             storyVideoImageProvider={storyVideoImageProvider}
             onStoryVideoImageProviderChange={setStoryVideoImageProvider}
           />

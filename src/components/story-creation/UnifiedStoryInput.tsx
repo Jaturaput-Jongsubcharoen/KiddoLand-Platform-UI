@@ -65,6 +65,9 @@ interface UnifiedStoryInputProps {
   detectedSummary: string;
   onGenerate: () => void;
   onReset?: () => void;
+  // To re-enable UI toggle in future:
+  // isTtsEnabled?: boolean;
+  // onToggleTts?: (next: boolean) => void;
   isGenerating: boolean;
   errorMessage: string;
   hasExistingStory: boolean;
@@ -117,6 +120,8 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
   detectedSummary,
   onGenerate,
   onReset,
+  // isTtsEnabled = true,
+  // onToggleTts,
   isGenerating,
   errorMessage,
   hasExistingStory,
@@ -770,6 +775,40 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
             )}
           </Alert>
         )}
+
+        {/*
+          Read-aloud toggle intentionally hidden per product decision.
+          Keep this block for easy restore in future.
+
+          {onToggleTts && (
+            <>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={isTtsEnabled}
+                    onChange={(_, checked) => onToggleTts(checked)}
+                    color="primary"
+                    inputProps={{ "aria-label": "Read aloud" }}
+                  />
+                }
+                label={
+                  <Stack direction="row" spacing={0.75} alignItems="center">
+                    {isTtsEnabled ? (
+                      <Volume2 size={18} aria-hidden />
+                    ) : (
+                      <VolumeX size={18} aria-hidden />
+                    )}
+                    <Typography variant="body2">Read aloud (request narration)</Typography>
+                  </Stack>
+                }
+                sx={{ alignItems: "center", ml: 0 }}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: -1.5 }}>
+                When enabled, Story Generation requests narration audio from the API.
+              </Typography>
+            </>
+          )}
+        */}
 
         {/* Generate/Refine + Reset Buttons */}
         <Stack direction="row" spacing={1.5} alignItems="stretch">
