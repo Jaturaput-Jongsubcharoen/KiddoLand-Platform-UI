@@ -510,7 +510,7 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
                   : "Audio narration is OFF (include_tts=false)"
               }
             > */}
-              {/* <IconButton
+            {/* <IconButton
                 aria-label={isTtsEnabled ? "Disable audio narration" : "Enable audio narration"}
                 aria-pressed={isTtsEnabled}
                 onClick={onToggleTts}
@@ -632,7 +632,6 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
               }}
             >
               <TextField
-                // label="💭 Tell me about the story you'd like to create..."
                 multiline
                 minRows={4}
                 maxRows={10}
@@ -689,20 +688,6 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
                   gap: 1,
                 }}
               >
-                {isTtsEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
-              </IconButton> */}
-            {/* </Tooltip> */}
-            <Tooltip title={micTooltipText}>
-              <span>
-                <IconButton
-                  aria-label={
-                    isRecording ? "Stop voice input" : "Start voice input"
-                <ImageUploadButton
-                  variant="icon"
-                  onAddImages={onAddImages}
-                  imagesCount={uploadedImages.length}
-                  isProcessing={isProcessingImages}
-                />
                 <Tooltip
                   title={
                     isTtsEnabled
@@ -711,7 +696,11 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
                   }
                 >
                   <IconButton
-                    aria-label={isTtsEnabled ? "Disable audio narration" : "Enable audio narration"}
+                    aria-label={
+                      isTtsEnabled
+                        ? "Disable audio narration"
+                        : "Enable audio narration"
+                    }
                     aria-pressed={isTtsEnabled}
                     onClick={onToggleTts}
                     sx={{
@@ -733,7 +722,11 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
                       },
                     }}
                   >
-                    {isTtsEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                    {isTtsEnabled ? (
+                      <Volume2 size={18} />
+                    ) : (
+                      <VolumeX size={18} />
+                    )}
                   </IconButton>
                 </Tooltip>
                 <Tooltip title={micTooltipText}>
