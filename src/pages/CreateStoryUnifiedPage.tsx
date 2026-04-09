@@ -1,10 +1,16 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Stack } from "@mui/material";
 import { AppShellLayout } from "../components";
 import { useApp } from "../context/AppContext";
 import { UnifiedStoryInput } from "../components/story-creation/UnifiedStoryInput";
 import { StoryPreviewPanel } from "../components/story-creation/StoryPreviewPanel";
-import { generateStorySample, saveFavoriteStory } from "../utils/aiApi";
+import {
+  generateStorySample,
+  generateStoryVideo,
+  parseStoryTtsDataUrl,
+  saveFavoriteStory,
+  type StoryVideoImageProvider,
+} from "../utils/aiApi";
 import { deriveTopicFromStoryContext, saveRecommendationActivity } from "../utils/recommendationActivity";
 import {
   ageFromBand,
@@ -57,10 +63,25 @@ export const CreateStoryUnifiedPage: React.FC = () => {
   const [isFavoriteSaved, setIsFavoriteSaved] = useState(false);
   const lastImagePromptRef = useRef("");
 
+  const [isStoryVideoLoading, setIsStoryVideoLoading] = useState(false);
+  const [storyVideoUrl, setStoryVideoUrl] = useState<string | null>(null);
+  const [storyVideoError, setStoryVideoError] = useState("");
+  const [includeStoryVideoVoice, setIncludeStoryVideoVoice] = useState(true);
+  const [storyVideoImageProvider, setStoryVideoImageProvider] =
+    useState<StoryVideoImageProvider>("gemini");
+
   const imageAnalysis = useMemo(
     () => (uploadedImages.length ? buildImageContext(uploadedImages) : ""),
     [uploadedImages]
   );
+
+  useEffect(() => {
+    return () => {
+      if (storyVideoUrl) {
+        URL.revokeObjectURL(storyVideoUrl);
+      }
+    };
+  }, [storyVideoUrl]);
 
   const buildCombinedPrompt = (overrides?: {
     childName?: string;
@@ -231,6 +252,11 @@ export const CreateStoryUnifiedPage: React.FC = () => {
       setRewrittenStory("");
       setFavoriteMessage("");
       setIsFavoriteSaved(false);
+      if (storyVideoUrl) {
+        URL.revokeObjectURL(storyVideoUrl);
+      }
+      setStoryVideoUrl(null);
+      setStoryVideoError("");
 
       const response = await generateStorySample(
         combinedPrompt,
@@ -388,6 +414,42 @@ export const CreateStoryUnifiedPage: React.FC = () => {
     }
   };
 
+  const handleWatchStoryVideo = async () => {
+    const storyText = (rewrittenStory || generatedStory).trim();
+    if (storyText.length < 10) {
+      setStoryVideoError("Story is too short to turn into a video.");
+      return;
+    }
+    if (!appState.accessToken) {
+      setStoryVideoError("You are not authenticated. Please sign in again.");
+      return;
+    }
+    setStoryVideoError("");
+    if (storyVideoUrl) {
+      URL.revokeObjectURL(storyVideoUrl);
+      setStoryVideoUrl(null);
+    }
+    try {
+      setIsStoryVideoLoading(true);
+      const audioSrc = rewrittenStory ? rewrittenStoryAudioSrc : generatedStoryAudioSrc;
+      const tts = parseStoryTtsDataUrl(audioSrc);
+      const blob = await generateStoryVideo(storyText, appState.accessToken, {
+        includeVoice: includeStoryVideoVoice,
+        imageProvider: storyVideoImageProvider,
+        ttsAudioBase64: includeStoryVideoVoice ? tts?.ttsAudioBase64 : null,
+        ttsMediaType: includeStoryVideoVoice ? tts?.ttsMediaType : null,
+      });
+      const url = URL.createObjectURL(blob);
+      setStoryVideoUrl(url);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to generate story video.";
+      setStoryVideoError(message);
+    } finally {
+      setIsStoryVideoLoading(false);
+    }
+  };
+
   const handleRemoveImage = (id: string) => {
     setImageError("");
     setUploadedImages((prev) => {
@@ -486,6 +548,14 @@ export const CreateStoryUnifiedPage: React.FC = () => {
             isFavoriteSaved={isFavoriteSaved}
             favoriteMessage={favoriteMessage}
             errorMessage={errorMessage}
+            onWatchStoryVideo={handleWatchStoryVideo}
+            isStoryVideoLoading={isStoryVideoLoading}
+            storyVideoUrl={storyVideoUrl}
+            storyVideoError={storyVideoError}
+            includeStoryVideoVoice={includeStoryVideoVoice}
+            onToggleStoryVideoVoice={setIncludeStoryVideoVoice}
+            storyVideoImageProvider={storyVideoImageProvider}
+            onStoryVideoImageProviderChange={setStoryVideoImageProvider}
           />
         )}
       </Stack>

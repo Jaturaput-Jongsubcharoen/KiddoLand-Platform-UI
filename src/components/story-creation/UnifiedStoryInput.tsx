@@ -497,6 +497,23 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
               },
             }}
           >
+            <ImageUploadButton
+              variant="icon"
+              onAddImages={onAddImages}
+              imagesCount={uploadedImages.length}
+              isProcessing={isProcessingImages}
+            />
+            {/* <Tooltip
+              title={
+                isTtsEnabled
+                  ? "Audio narration is ON (include_tts=true)"
+                  : "Audio narration is OFF (include_tts=false)"
+              }
+            > */}
+              {/* <IconButton
+                aria-label={isTtsEnabled ? "Disable audio narration" : "Enable audio narration"}
+                aria-pressed={isTtsEnabled}
+                onClick={onToggleTts}
             {/* Image preview on top (same flat white as prompt area) */}
             {uploadedImages.length > 0 && (
               <Box
@@ -672,6 +689,14 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
                   gap: 1,
                 }}
               >
+                {isTtsEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+              </IconButton> */}
+            {/* </Tooltip> */}
+            <Tooltip title={micTooltipText}>
+              <span>
+                <IconButton
+                  aria-label={
+                    isRecording ? "Stop voice input" : "Start voice input"
                 <ImageUploadButton
                   variant="icon"
                   onAddImages={onAddImages}
