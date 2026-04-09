@@ -16,8 +16,6 @@ import {
   Shield,
   Mic,
   MicOff,
-  Volume2,
-  VolumeX,
   RotateCcw,
   Pencil,
   X,
@@ -67,8 +65,6 @@ interface UnifiedStoryInputProps {
   detectedSummary: string;
   onGenerate: () => void;
   onReset?: () => void;
-  isTtsEnabled: boolean;
-  onToggleTts: () => void;
   isGenerating: boolean;
   errorMessage: string;
   hasExistingStory: boolean;
@@ -121,8 +117,6 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
   detectedSummary,
   onGenerate,
   onReset,
-  isTtsEnabled,
-  onToggleTts,
   isGenerating,
   errorMessage,
   hasExistingStory,
@@ -369,8 +363,6 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
         ? "Click to stop recording"
         : "Click to start voice input";
 
-  const ttsColor = isTtsEnabled ? "primary.main" : "error.main";
-
   return (
     <KiddoCard hoverEffect={false} sx={{ p: 4, borderRadius: 2 }}>
       <Stack spacing={3}>
@@ -520,23 +512,6 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
               },
             }}
           >
-            <ImageUploadButton
-              variant="icon"
-              onAddImages={onAddImages}
-              imagesCount={uploadedImages.length}
-              isProcessing={isProcessingImages}
-            />
-            {/* <Tooltip
-              title={
-                isTtsEnabled
-                  ? "Audio narration is ON (include_tts=true)"
-                  : "Audio narration is OFF (include_tts=false)"
-              }
-            > */}
-            {/* <IconButton
-                aria-label={isTtsEnabled ? "Disable audio narration" : "Enable audio narration"}
-                aria-pressed={isTtsEnabled}
-                onClick={onToggleTts}
             {/* Image preview on top (same flat white as prompt area) */}
             {uploadedImages.length > 0 && (
               <Box
@@ -711,47 +686,12 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
                   gap: 1,
                 }}
               >
-                <Tooltip
-                  title={
-                    isTtsEnabled
-                      ? "Audio narration is ON (include_tts=true)"
-                      : "Audio narration is OFF (include_tts=false)"
-                  }
-                >
-                  <IconButton
-                    aria-label={
-                      isTtsEnabled
-                        ? "Disable audio narration"
-                        : "Enable audio narration"
-                    }
-                    aria-pressed={isTtsEnabled}
-                    onClick={onToggleTts}
-                    sx={{
-                      color: ttsColor,
-                      width: 40,
-                      height: 40,
-                      borderRadius: "50%",
-                      border: "1px solid",
-                      borderColor: ttsColor,
-                      backgroundColor: isTtsEnabled
-                        ? "rgba(255, 255, 255, 0.95)"
-                        : "rgba(239, 68, 68, 0.12)",
-                      boxShadow: "none",
-                      "&:hover": {
-                        borderColor: ttsColor,
-                        backgroundColor: isTtsEnabled
-                          ? "rgba(255, 255, 255, 1)"
-                          : "rgba(239, 68, 68, 0.18)",
-                      },
-                    }}
-                  >
-                    {isTtsEnabled ? (
-                      <Volume2 size={18} />
-                    ) : (
-                      <VolumeX size={18} />
-                    )}
-                  </IconButton>
-                </Tooltip>
+                <ImageUploadButton
+                  variant="icon"
+                  onAddImages={onAddImages}
+                  imagesCount={uploadedImages.length}
+                  isProcessing={isProcessingImages}
+                />
                 <Tooltip title={micTooltipText}>
                   <span>
                     <IconButton
