@@ -106,6 +106,14 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/institution/play-learning-activity"
+              element={
+                <ProtectedRoute requireMode="institution">
+                  <PlayLearningActivityPage />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Catch all - redirect to mode selection */}
             <Route path="*" element={<Navigate to="/" replace />} />
