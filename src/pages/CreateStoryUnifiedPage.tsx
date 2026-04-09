@@ -58,8 +58,6 @@ export const CreateStoryUnifiedPage: React.FC = () => {
   const [rewrittenStory, setRewrittenStory] = useState("");
   const [generatedStoryAudioSrc, setGeneratedStoryAudioSrc] = useState<string | null>(null);
   const [rewrittenStoryAudioSrc, setRewrittenStoryAudioSrc] = useState<string | null>(null);
-  const [isTtsEnabled, setIsTtsEnabled] = useState(true);
-
   // UI state
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSavingFavorite, setIsSavingFavorite] = useState(false);
@@ -291,7 +289,7 @@ export const CreateStoryUnifiedPage: React.FC = () => {
       const response = await generateStorySample(
         combinedPrompt,
         appState.accessToken,
-        isTtsEnabled
+        false
       );
 
       const ttsAudioSrc =
@@ -574,8 +572,6 @@ export const CreateStoryUnifiedPage: React.FC = () => {
           detectedSummary={detectedSummary}
           onGenerate={handleGenerate}
           onReset={handleReset}
-          isTtsEnabled={isTtsEnabled}
-          onToggleTts={() => setIsTtsEnabled((prev) => !prev)}
           isGenerating={isGenerating}
           errorMessage={errorMessage}
           hasExistingStory={!!generatedStory}
