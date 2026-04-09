@@ -20,7 +20,11 @@ import { LearningWorldScene } from '../components/LearningWorldScene';
 
 const quickActions = [
   { title: 'Generate for Class', icon: <Users />, route: '/institution/create-story' as const },
-  { title: 'Activity Templates', icon: <BookOpen />, route: null },
+  {
+    title: 'Learning activity quiz',
+    icon: <BookOpen />,
+    route: '/institution/play-learning-activity' as const,
+  },
   { title: 'Usage Summary (Aggregated)', icon: <LayoutDashboard />, route: null },
 ];
 

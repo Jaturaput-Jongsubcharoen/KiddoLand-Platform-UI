@@ -132,6 +132,112 @@ export const generateRhyme = async (
   return response.json();
 };
 
+export interface LearningActivityQuestion {
+  prompt: string;
+  options: string[];
+  correct_index: number;
+  feedback_correct: string;
+  feedback_incorrect: string;
+}
+
+export interface LearningActivityData {
+  title: string;
+  questions: LearningActivityQuestion[];
+}
+
+export type LearningActivityApiResult =
+  | { success: true; data: LearningActivityData }
+  | { success: false; error: string };
+
+export const generateLearningActivity = async (
+  params: {
+    age_band: string;
+    theme: string;
+    learning_goal: string;
+    difficulty?: 'easy' | 'medium' | 'hard';
+  },
+  accessToken: string,
+): Promise<LearningActivityApiResult> => {
+  const apiBaseUrl = resolveApiBaseUrl();
+  const body: Record<string, unknown> = {
+    age_band: params.age_band.trim(),
+    theme: params.theme.trim(),
+    learning_goal: params.learning_goal.trim(),
+  };
+  if (params.difficulty) {
+    body.difficulty = params.difficulty;
+  }
+
+  const response = await fetch(`${apiBaseUrl}/ai/activity`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const rawText = await response.text();
+  let errorPayload: Record<string, unknown> = {};
+  if (rawText) {
+    try {
+      errorPayload = JSON.parse(rawText) as Record<string, unknown>;
+    } catch {
+      errorPayload = {};
+    }
+  }
+
+  if (response.status === 401) {
+    throw new Error('Your session has expired. Please sign in again.');
+  }
+
+  if (response.status === 400) {
+    const backendMessage =
+      typeof errorPayload.detail === 'string' ? errorPayload.detail : '';
+    throw new Error(backendMessage || 'Invalid activity request.');
+  }
+
+  if (response.status === 422) {
+    const detail = errorPayload.detail;
+    const msg =
+      typeof detail === 'string'
+        ? detail
+        : Array.isArray(detail)
+          ? detail.map((d: { msg?: string }) => d?.msg).filter(Boolean).join(' ')
+          : '';
+    throw new Error(msg || 'Please check age band, theme, and learning goal.');
+  }
+
+  if (!response.ok) {
+    const backendMessage =
+      typeof errorPayload.detail === 'string' ? errorPayload.detail : '';
+    throw new Error(backendMessage || 'Unable to generate learning activity.');
+  }
+
+  if (errorPayload.success === false) {
+    return {
+      success: false,
+      error:
+        typeof errorPayload.error === 'string'
+          ? errorPayload.error
+          : 'Failed to generate activity',
+    };
+  }
+
+  if (
+    errorPayload.success === true &&
+    errorPayload.data &&
+    typeof errorPayload.data === 'object'
+  ) {
+    return {
+      success: true,
+      data: errorPayload.data as LearningActivityData,
+    };
+  }
+
+  throw new Error('Unexpected response from learning activity service.');
+};
+
 export const getStoryHistory = async (accessToken: string): Promise<StoryHistoryItem[]> => {
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/ai/history`, {
