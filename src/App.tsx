@@ -1,4 +1,4 @@
-import React from 'react';
+  import React from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -95,6 +95,14 @@ const App: React.FC = () => {
               element={
                 <ProtectedRoute requireMode="institution">
                   <InstitutionDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/institution/create-story"
+              element={
+                <ProtectedRoute requireMode="institution">
+                  <CreateStoryUnifiedPage />
                 </ProtectedRoute>
               }
             />

@@ -25,11 +25,16 @@ import {
 import { KiddoCard, KiddoButton } from "../index";
 import { QuickStarterChips } from "./QuickStarterChips";
 import { ImageUploadButton } from "./ImageUploadButton";
-import { AdvancedOptionsPanel } from "./AdvancedOptionsPanel";
+import {
+  AdvancedOptionsPanel,
+  type InstitutionStoryContextFields,
+} from "./AdvancedOptionsPanel";
 import type { ImageAttachment } from "../../types/storyOptions";
 
 interface UnifiedStoryInputProps {
   mode: "home" | "institution" | null;
+  /** Classroom-only fields; omit in home mode. */
+  institutionContext?: InstitutionStoryContextFields | null;
   childName: string;
   setChildName: (name: string) => void;
   textPrompt: string;
@@ -83,6 +88,7 @@ const micPulse = keyframes`
 
 export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
   mode,
+  institutionContext,
   childName,
   setChildName,
   textPrompt,
@@ -121,7 +127,7 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
   errorMessage,
   hasExistingStory,
 }) => {
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(() => mode === "institution");
   const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isVoiceSupported, setIsVoiceSupported] = useState(true);
@@ -323,7 +329,14 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
     startRecognition();
   };
 
-  // User can generate with any input - age band is completely optional
+  const hasInstitutionExtras =
+    mode === "institution" &&
+    institutionContext &&
+    (Boolean(institutionContext.subjectArea) ||
+      Boolean(institutionContext.sessionSetting) ||
+      Boolean(institutionContext.teachingFocus.trim()));
+
+  // User can generate with any input — institution can lean on classroom fields + age band
   const hasAnyInput =
     textPrompt.trim() ||
     voiceTranscription ||
@@ -335,7 +348,8 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
     currentMood ||
     language !== "en" ||
     ageBand ||
-    childName;
+    (mode === "home" && childName) ||
+    hasInstitutionExtras;
 
   const canGenerate = hasAnyInput;
 
@@ -381,7 +395,7 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
                   fontWeight: 800,
                 }}
               >
-                Create a Story
+                {mode === "institution" ? "Create a class story" : "Create a Story"}
               </Typography>
               <Tooltip title="Your data is not saved - privacy first!">
                 <Box
@@ -432,8 +446,16 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
               fontWeight: 500,
             }}
           >
-            ✨ Tell KiddoLand what kind of story you’d like. We’ll keep it fun
-            and age‑friendly!
+            {mode === "institution" ? (
+              <>
+                Describe the story for your <strong>group</strong> — no individual names. Use{" "}
+                <strong>Story Preferences</strong> for subject, setting, and age band.
+              </>
+            ) : (
+              <>
+                ✨ Tell KiddoLand what kind of story you’d like. We’ll keep it fun and age‑friendly!
+              </>
+            )}
           </Typography>
         </Box>
 
@@ -441,6 +463,7 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
         <Collapse in={isAdvancedOpen}>
           <AdvancedOptionsPanel
             mode={mode}
+            institutionContext={institutionContext ?? null}
             childName={childName}
             setChildName={setChildName}
             ageBand={ageBand}
