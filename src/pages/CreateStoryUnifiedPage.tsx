@@ -46,6 +46,11 @@ export const CreateStoryUnifiedPage: React.FC = () => {
   const [currentMood, setCurrentMood] = useState("");
   const [language, setLanguage] = useState("en");
 
+  /** Institution / classroom-only (session-only; not persisted beyond story prefs UX) */
+  const [institutionSubjectArea, setInstitutionSubjectArea] = useState("");
+  const [institutionSessionSetting, setInstitutionSessionSetting] = useState("");
+  const [institutionTeachingFocus, setInstitutionTeachingFocus] = useState("");
+
   const [detectedSummary, setDetectedSummary] = useState("");
 
   // Generated story state
@@ -108,6 +113,20 @@ export const CreateStoryUnifiedPage: React.FC = () => {
 
     if (mode === "institution" && effectiveAge) {
       prompt += `${prompt ? ". " : ""}This story is for students age ${effectiveAge}.`;
+    }
+
+    if (mode === "institution") {
+      if (institutionSubjectArea.trim()) {
+        prompt += `${prompt ? " " : ""}Subject area: ${institutionSubjectArea.trim()}.`;
+      }
+      if (institutionSessionSetting.trim()) {
+        prompt += ` Session setting: ${institutionSessionSetting.trim()}.`;
+      }
+      if (institutionTeachingFocus.trim()) {
+        prompt += ` Teaching focus: ${institutionTeachingFocus.trim()}.`;
+      }
+      prompt +=
+        " Address listeners as young learners or the class as a whole; do not use individual children's names.";
     }
 
     if (interests.length > 0) {
@@ -225,6 +244,17 @@ export const CreateStoryUnifiedPage: React.FC = () => {
       applyExtraction(extracted);
     }
 
+    if (mode === "institution") {
+      const structuredAge = exactAge ?? ageFromBand(ageBand);
+      const ageFromText = extracted?.age;
+      if (structuredAge == null && ageFromText == null) {
+        setErrorMessage(
+          "Please set an age band in Story Preferences (or type an age such as “age 7” in your story idea) so content fits your group.",
+        );
+        return;
+      }
+    }
+
     const effectiveChildName =
       mode === "home" ? childName.trim() || extracted?.childName || "Kiddo" : "";
     const effectiveAge = exactAge ?? extracted?.age ?? ageFromBand(ageBand) ?? 7;
@@ -308,6 +338,9 @@ export const CreateStoryUnifiedPage: React.FC = () => {
     setStoryLength("medium");
     setCurrentMood("");
     setLanguage("en");
+    setInstitutionSubjectArea("");
+    setInstitutionSessionSetting("");
+    setInstitutionTeachingFocus("");
     setDetectedSummary("");
     setGeneratedStory("");
     setRewrittenStory("");
@@ -492,11 +525,23 @@ export const CreateStoryUnifiedPage: React.FC = () => {
     <AppShellLayout>
       <Stack spacing={3}>
         <Box>
-          <BackButton to="/home" />
+          <BackButton to={mode === "institution" ? "/institution" : "/home"} />
         </Box>
         {/* Main Input Component */}
         <UnifiedStoryInput
           mode={mode}
+          institutionContext={
+            mode === "institution"
+              ? {
+                  subjectArea: institutionSubjectArea,
+                  setSubjectArea: setInstitutionSubjectArea,
+                  sessionSetting: institutionSessionSetting,
+                  setSessionSetting: setInstitutionSessionSetting,
+                  teachingFocus: institutionTeachingFocus,
+                  setTeachingFocus: setInstitutionTeachingFocus,
+                }
+              : undefined
+          }
           childName={childName}
           setChildName={setChildName}
           textPrompt={textPrompt}

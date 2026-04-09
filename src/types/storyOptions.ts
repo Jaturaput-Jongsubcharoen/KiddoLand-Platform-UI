@@ -164,3 +164,25 @@ export const STORY_LENGTHS = [
   { value: 'medium', label: 'Medium', duration: '5 min' },
   { value: 'long', label: 'Long', duration: '8-10 min' },
 ] as const;
+
+/** Institution / classroom story composer — used in prompts only (session-only, not stored). */
+export const INSTITUTION_SUBJECT_AREAS = [
+  'Literacy & language',
+  'Science & nature',
+  'Mathematics in context',
+  'Social studies & community',
+  'SEL & wellbeing',
+  'Creative arts',
+  'Health & movement',
+  'Cross-curricular',
+  'Other / not listed',
+] as const;
+
+export const INSTITUTION_SESSION_SETTINGS = [
+  'Whole-class read-aloud',
+  'Small group',
+  'Circle time',
+  'Library or story corner',
+  'After-school / extended day',
+  'Assembly or community',
+] as const;

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Stack, Typography } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import {
   Users,
   BookOpen,
@@ -18,12 +19,14 @@ import {
 import { LearningWorldScene } from '../components/LearningWorldScene';
 
 const quickActions = [
-  { title: 'Generate for Class', icon: <Users /> },
-  { title: 'Activity Templates', icon: <BookOpen /> },
-  { title: 'Usage Summary (Aggregated)', icon: <LayoutDashboard /> },
+  { title: 'Generate for Class', icon: <Users />, route: '/institution/create-story' as const },
+  { title: 'Activity Templates', icon: <BookOpen />, route: null },
+  { title: 'Usage Summary (Aggregated)', icon: <LayoutDashboard />, route: null },
 ];
 
 export const InstitutionDashboardPage: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <AppShellLayout>
       {/* Background Scene Layer - 35% opacity for ambient feel */}
@@ -64,7 +67,12 @@ export const InstitutionDashboardPage: React.FC = () => {
                 placement="top"
                 ariaLabel="Anonymous session rules"
               />
-              <KiddoButton variant="contained" color="secondary" glow>
+              <KiddoButton
+                variant="contained"
+                color="secondary"
+                glow
+                onClick={() => navigate('/institution/create-story')}
+              >
                 Start Anonymous Session
               </KiddoButton>
             </Box>
@@ -79,6 +87,7 @@ export const InstitutionDashboardPage: React.FC = () => {
               icon={tile.icon}
               iconBgColor="rgba(20, 184, 166, 0.12)"
               iconColor="info.main"
+              onClick={tile.route ? () => navigate(tile.route!) : undefined}
             />
           ))}
         </GridSection>

@@ -25,10 +25,22 @@ import {
   STORY_LENGTHS,
   MOODS,
   LANGUAGES,
+  INSTITUTION_SUBJECT_AREAS,
+  INSTITUTION_SESSION_SETTINGS,
 } from "../../types/storyOptions";
+
+export interface InstitutionStoryContextFields {
+  subjectArea: string;
+  setSubjectArea: (v: string) => void;
+  sessionSetting: string;
+  setSessionSetting: (v: string) => void;
+  teachingFocus: string;
+  setTeachingFocus: (v: string) => void;
+}
 
 interface AdvancedOptionsPanelProps {
   mode: "home" | "institution" | null;
+  institutionContext?: InstitutionStoryContextFields | null;
   childName: string;
   setChildName: (name: string) => void;
   ageBand: number | null;
@@ -51,6 +63,7 @@ interface AdvancedOptionsPanelProps {
 
 export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
   mode,
+  institutionContext,
   childName,
   setChildName,
   ageBand,
@@ -93,14 +106,74 @@ export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
         {/* Header */}
         <Box>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            Story Preferences
+            {mode === "institution" ? "Classroom story setup" : "Story Preferences"}
           </Typography>
-        
-            <Typography variant="caption">
-              🔒 <strong>Privacy First:</strong>  These preferences are optional and only used to create this story. We don’t save them.
-            </Typography>
-          
+
+          <Typography variant="caption">
+            🔒 <strong>Privacy first:</strong> these choices are only used for this session’s story prompt — they are not stored.
+          </Typography>
         </Box>
+
+        {mode === "institution" && institutionContext && (
+          <>
+            <Alert severity="info" sx={{ py: 0.75 }}>
+              <strong>Institution mode:</strong> no individual child names. Set an{" "}
+              <strong>age band</strong> (or type an age in your idea) so vocabulary and themes fit your
+              group.
+            </Alert>
+
+            <FormControl fullWidth>
+              <InputLabel id="inst-subject-label">Subject / unit focus</InputLabel>
+              <Select
+                labelId="inst-subject-label"
+                value={institutionContext.subjectArea}
+                label="Subject / unit focus"
+                onChange={(e) => institutionContext.setSubjectArea(e.target.value)}
+              >
+                <MenuItem value="">
+                  <em>Not specified</em>
+                </MenuItem>
+                {INSTITUTION_SUBJECT_AREAS.map((area) => (
+                  <MenuItem key={area} value={area}>
+                    {area}
+                  </MenuItem>
+                ))}
+              </Select>
+              <FormHelperText>Links the story to your lesson (e.g. science unit, literacy block).</FormHelperText>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel id="inst-session-label">Session setting</InputLabel>
+              <Select
+                labelId="inst-session-label"
+                value={institutionContext.sessionSetting}
+                label="Session setting"
+                onChange={(e) => institutionContext.setSessionSetting(e.target.value)}
+              >
+                <MenuItem value="">
+                  <em>Not specified</em>
+                </MenuItem>
+                {INSTITUTION_SESSION_SETTINGS.map((s) => (
+                  <MenuItem key={s} value={s}>
+                    {s}
+                  </MenuItem>
+                ))}
+              </Select>
+              <FormHelperText>How you&apos;ll share the story (whole class, small group, etc.).</FormHelperText>
+            </FormControl>
+
+            <TextField
+              label="Teaching goal / curriculum note (optional)"
+              value={institutionContext.teachingFocus}
+              onChange={(e) => institutionContext.setTeachingFocus(e.target.value)}
+              placeholder="e.g. vocabulary about habitats; practice listening for a problem and solution"
+              multiline
+              minRows={2}
+              fullWidth
+              helperText="Short note for the model — not stored after this session."
+            />
+          </>
+        )}
 
         {/* Child Name (Home Mode Only) */}
         {mode === "home" && (

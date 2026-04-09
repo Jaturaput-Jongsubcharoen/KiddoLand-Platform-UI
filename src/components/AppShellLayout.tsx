@@ -30,6 +30,8 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
 
   const isHomeMode = appState.selectedMode === "home";
   const isInstitutionMode = appState.selectedMode === "institution";
+  const institutionDashboardPath = "/institution";
+  const institutionCreateStoryPath = "/institution/create-story";
   const isAuthRoute = location.pathname.startsWith("/auth/");
   const showMainNavControls = appState.isAuthenticated && !isAuthRoute;
 
@@ -171,17 +173,34 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
 
                     {/* MOBILE NAV ITEMS */}
                     <Box sx={{ display: { xs: "block", md: "none" } }}>
-                      <MenuItem onClick={() => navigate("/home")}>
-                        Home
-                      </MenuItem>
-                      <MenuItem onClick={() => navigate("/story-history")}>
-                        History
-                      </MenuItem>
-                      <MenuItem
-                        onClick={() => navigate("/story-favorites")}
-                      >
-                        Favourite
-                      </MenuItem>
+                      {isInstitutionMode ? (
+                        <>
+                          <MenuItem
+                            onClick={() => navigate(institutionDashboardPath)}
+                          >
+                            Dashboard
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() => navigate(institutionCreateStoryPath)}
+                          >
+                            Create story
+                          </MenuItem>
+                        </>
+                      ) : (
+                        <>
+                          <MenuItem onClick={() => navigate("/home")}>
+                            Home
+                          </MenuItem>
+                          <MenuItem onClick={() => navigate("/story-history")}>
+                            History
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() => navigate("/story-favorites")}
+                          >
+                            Favourite
+                          </MenuItem>
+                        </>
+                      )}
                       <Divider sx={{ my: 1 }} />
                     </Box>
 
