@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, SxProps, Theme } from '@mui/material';
 
-export type IconBadgeSize = 'small' | 'medium' | 'large';
+export type IconBadgeSize = 'small' | 'medium' | 'large' | 'xlarge';
 export type IconBadgeShape = 'circle' | 'rounded';
 
 interface IconBadgeProps {
@@ -18,6 +18,7 @@ const sizeMap: Record<IconBadgeSize, { container: number; icon: string }> = {
   small: { container: 46, icon: '1.25rem' },
   medium: { container: 52, icon: '1.5rem' },
   large: { container: 80, icon: '2.5rem' },
+  xlarge: { container: 96, icon: '3rem' },
 };
 
 const shapeMap: Record<IconBadgeShape, string> = {
