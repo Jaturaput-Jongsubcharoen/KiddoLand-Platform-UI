@@ -107,6 +107,14 @@ const App: React.FC = () => {
               }
             />
             <Route
+              path="/institution/create-rhyme"
+              element={
+                <ProtectedRoute requireMode="institution">
+                  <CreateRhymePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/institution/play-learning-activity"
               element={
                 <ProtectedRoute requireMode="institution">

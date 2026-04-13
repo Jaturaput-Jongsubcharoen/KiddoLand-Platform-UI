@@ -7,6 +7,7 @@ import {
   Divider,
   FormControl,
   FormControlLabel,
+  FormHelperText,
   IconButton,
   InputLabel,
   keyframes,
@@ -28,6 +29,7 @@ import {
   Copy,
   Check,
   Heart,
+  Lock,
   Mic,
   MicOff,
   RotateCcw,
@@ -41,7 +43,7 @@ import {
 import { ImageUploadButton } from "../components/story-creation/ImageUploadButton";
 import { buildImageContext, processImageFiles } from "../utils/imageProcessing";
 import type { ImageAttachment } from "../types/storyOptions";
-import { AppShellLayout, KiddoButton, KiddoCard } from "../components";
+import { AppShellLayout, BannerNotice, KiddoButton, KiddoCard } from "../components";
 import { LearningWorldScene } from "../components/LearningWorldScene";
 import BackButton from "../components/BackButton";
 import { useApp } from "../context/AppContext";
@@ -58,6 +60,17 @@ import {
   type RhymeStyle,
   type RhymePattern,
 } from "../utils/rhymePrompt";
+import { AGE_BANDS } from "../types/storyOptions";
+
+/** Map AGE_BANDS numeric value → representative age within the API's 1–10 cap. */
+const AGE_BAND_TO_AGE: Record<number, number> = {
+  1: 1,
+  3: 3,
+  5: 5,
+  7: 7,
+  9: 9,
+  11: 10, // API max is 10
+};
 
 // ── Animations ────────────────────────────────────────────────────────────────
 const micPulse = keyframes`
@@ -104,10 +117,14 @@ const LENGTH_LABELS: Record<RhymeLength, string> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 const CreateRhymePage: React.FC = () => {
   const { appState } = useApp();
+  const isInstitution = appState.selectedMode === "institution";
+  const backTarget = isInstitution ? "/institution" : undefined;
 
   // Input state
   const [childName, setChildName] = useState(DEFAULTS.childName);
   const [age, setAge] = useState<number>(DEFAULTS.age);
+  // Institution-only: age band select (null = unset)
+  const [ageBandValue, setAgeBandValue] = useState<number | null>(null);
   const [topic, setTopic] = useState(DEFAULTS.topic);
   const [rhymeStyle, setRhymeStyle] = useState<RhymeStyle>(DEFAULTS.rhymeStyle);
   const [rhymePattern, setRhymePattern] = useState<RhymePattern>(DEFAULTS.rhymePattern);
@@ -366,10 +383,10 @@ const CreateRhymePage: React.FC = () => {
       : "Start voice input";
 
   // Derived labels
-  const canGenerate = useMemo(
-    () => childName.trim().length > 0 && age >= 1 && age <= 10,
-    [childName, age],
-  );
+  const canGenerate = useMemo(() => {
+    if (isInstitution) return ageBandValue !== null;
+    return childName.trim().length > 0 && age >= 1 && age <= 10;
+  }, [isInstitution, ageBandValue, childName, age]);
   const activeStyleLabel = RHYME_STYLES.find((s) => s.value === rhymeStyle)?.label ?? rhymeStyle;
   const activePatternLabel = RHYME_PATTERNS.find((p) => p.value === rhymePattern)?.label ?? rhymePattern;
   const activePurposeLabel = RHYME_PURPOSES.find((p) => p.value === rhymePurpose)?.label ?? "";
@@ -412,6 +429,7 @@ const CreateRhymePage: React.FC = () => {
   const handleReset = () => {
     setChildName(DEFAULTS.childName);
     setAge(DEFAULTS.age);
+    setAgeBandValue(null);
     setTopic(DEFAULTS.topic);
     setRhymeStyle(DEFAULTS.rhymeStyle);
     setRhymePattern(DEFAULTS.rhymePattern);
@@ -446,14 +464,26 @@ const CreateRhymePage: React.FC = () => {
       setErrorMessage("You are not authenticated. Please sign in again.");
       return;
     }
-    if (!childName.trim()) {
+
+    // Resolve name + age based on mode
+    const effectiveName = isInstitution ? "the class" : childName.trim();
+    const effectiveAge = isInstitution
+      ? (ageBandValue !== null ? AGE_BAND_TO_AGE[ageBandValue] ?? 5 : 5)
+      : age;
+
+    if (!isInstitution && !effectiveName) {
       setErrorMessage("Please enter a child name to personalize the rhyme.");
       return;
     }
-    if (age < 1 || age > 10) {
+    if (!isInstitution && (effectiveAge < 1 || effectiveAge > 10)) {
       setErrorMessage("Please choose an age between 1 and 10.");
       return;
     }
+    if (isInstitution && ageBandValue === null) {
+      setErrorMessage("Please select an age band for the class.");
+      return;
+    }
+
     try {
       setIsGenerating(true);
       setErrorMessage("");
@@ -468,8 +498,8 @@ const CreateRhymePage: React.FC = () => {
         LEARNING_FOCUSES.find((f) => f.value === learningFocus)?.instruction ?? "";
 
       const prompt = buildRhymePrompt({
-        childName: childName.trim(),
-        age,
+        childName: effectiveName,
+        age: effectiveAge,
         topic: topic.trim(),
         style: rhymeStyle,
         pattern: rhymePattern,
@@ -481,7 +511,7 @@ const CreateRhymePage: React.FC = () => {
 
       const response = await generateRhyme(
         prompt,
-        age,
+        effectiveAge,
         appState.accessToken,
         readAloudEnabled,
       );
@@ -549,7 +579,15 @@ const CreateRhymePage: React.FC = () => {
 
       <Box sx={{ position: "relative", zIndex: 1 }}>
         <Stack spacing={4}>
-          <Box><BackButton /></Box>
+          <Box><BackButton to={backTarget} /></Box>
+
+          {isInstitution && (
+            <BannerNotice
+              message="Institution Mode — no individual child names. A rhyme is generated for the whole class using the selected age band."
+              severity="info"
+              icon={<Lock size={20} />}
+            />
+          )}
 
           {/* ── Main card ── */}
           <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
@@ -834,28 +872,67 @@ const CreateRhymePage: React.FC = () => {
               {/* ── Error ── */}
               {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 
-              {/* ── Required: Name + Age ── */}
-              <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                <TextField
-                  label="Child Name"
-                  value={childName}
-                  onChange={(e) => setChildName(e.target.value)}
-                  helperText="Required for personalization"
-                  fullWidth
-                />
-                <Box sx={{ minWidth: 220 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Age (1–10)</Typography>
-                  <Slider
-                    value={age}
-                    onChange={(_, value) => setAge(value as number)}
-                    min={1}
-                    max={10}
-                    marks
-                    valueLabelDisplay="on"
-                    sx={{ mt: 1 }}
+              {/* ── Required: Name + Age (home) / Age band (institution) ── */}
+              {isInstitution ? (
+                <FormControl fullWidth required>
+                  <InputLabel id="rhyme-age-band-label" shrink>
+                    Class age band
+                  </InputLabel>
+                  <Select
+                    labelId="rhyme-age-band-label"
+                    value={ageBandValue === null ? "" : ageBandValue}
+                    label="Class age band"
+                    displayEmpty
+                    renderValue={(selected) => {
+                      if (selected === "" || selected == null) {
+                        return (
+                          <Box component="span" sx={{ color: "text.secondary" }}>
+                            Select the age band for this class
+                          </Box>
+                        );
+                      }
+                      const band = AGE_BANDS.find((b) => b.value === selected);
+                      return band?.label ?? String(selected);
+                    }}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setAgeBandValue(raw === "" ? null : Number(raw));
+                    }}
+                  >
+                    <MenuItem value="" sx={{ display: "none" }} disabled aria-hidden>—</MenuItem>
+                    {AGE_BANDS.map((band) => (
+                      <MenuItem key={band.value} value={band.value}>
+                        {band.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <FormHelperText>
+                    Used to tailor vocabulary and complexity — no individual names stored.
+                  </FormHelperText>
+                </FormControl>
+              ) : (
+                <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                  <TextField
+                    label="Child Name"
+                    value={childName}
+                    onChange={(e) => setChildName(e.target.value)}
+                    helperText="Required for personalization"
+                    fullWidth
                   />
-                </Box>
-              </Stack>
+                  <Box sx={{ minWidth: 220 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>Age (1–10)</Typography>
+                    <Slider
+                      value={age}
+                      onChange={(_, value) => setAge(value as number)}
+                      min={1}
+                      max={10}
+                      marks
+                      valueLabelDisplay="on"
+                      sx={{ mt: 1 }}
+                    />
+                  </Box>
+                </Stack>
+              )}
 
               {/* ── Topic + image preview in one bordered box (same pattern as story creation) ── */}
               <Box
@@ -1193,7 +1270,7 @@ const CreateRhymePage: React.FC = () => {
                   sx={{
                     position: "absolute",
                     top: 16,
-                    right: 60,
+                    right: isInstitution ? 16 : 60,
                     color: copied ? "success.main" : "text.secondary",
                     transition: "all 0.3s ease",
                     "&:hover": { color: "text.primary", transform: "scale(1.15)" },
@@ -1203,32 +1280,34 @@ const CreateRhymePage: React.FC = () => {
                 </IconButton>
               </Tooltip>
 
-              {/* Save to Favorites */}
-              <Tooltip
-                title={
-                  isFavoriteSaved ? "Saved!" : isSavingFavorite ? "Saving..." : "Save to Favorites"
-                }
-              >
-                <IconButton
-                  onClick={handleSaveFavorite}
-                  disabled={isSavingFavorite || isFavoriteSaved}
-                  sx={{
-                    position: "absolute",
-                    top: 16,
-                    right: 16,
-                    color: isFavoriteSaved ? "#E91E63" : "#999",
-                    transition: "all 0.3s ease",
-                    "&:hover": { color: "#E91E63", transform: "scale(1.15)" },
-                    "&:active": { transform: "scale(0.95)" },
-                  }}
+              {/* Save to Favorites — home mode only */}
+              {!isInstitution && (
+                <Tooltip
+                  title={
+                    isFavoriteSaved ? "Saved!" : isSavingFavorite ? "Saving..." : "Save to Favorites"
+                  }
                 >
-                  <Heart size={28} fill={isFavoriteSaved ? "#E91E63" : "none"} strokeWidth={2} />
-                </IconButton>
-              </Tooltip>
+                  <IconButton
+                    onClick={handleSaveFavorite}
+                    disabled={isSavingFavorite || isFavoriteSaved}
+                    sx={{
+                      position: "absolute",
+                      top: 16,
+                      right: 16,
+                      color: isFavoriteSaved ? "#E91E63" : "#999",
+                      transition: "all 0.3s ease",
+                      "&:hover": { color: "#E91E63", transform: "scale(1.15)" },
+                      "&:active": { transform: "scale(0.95)" },
+                    }}
+                  >
+                    <Heart size={28} fill={isFavoriteSaved ? "#E91E63" : "none"} strokeWidth={2} />
+                  </IconButton>
+                </Tooltip>
+              )}
 
               <Stack spacing={2}>
-                <Typography variant="h5" sx={{ fontWeight: 700, pr: 12 }}>
-                  Your Rhyme
+                <Typography variant="h5" sx={{ fontWeight: 700, pr: isInstitution ? 6 : 12 }}>
+                  {isInstitution ? "Class Rhyme" : "Your Rhyme"}
                 </Typography>
 
                 {rhymeAudioSrc && (

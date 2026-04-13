@@ -82,7 +82,14 @@ function bootstrapRecommendedBooksState() {
   };
 }
 
-export const RecommendedBooksSection: React.FC = () => {
+interface RecommendedBooksSectionProps {
+  /** Override the default section heading. */
+  sectionTitle?: string;
+}
+
+export const RecommendedBooksSection: React.FC<RecommendedBooksSectionProps> = ({
+  sectionTitle = 'Recommended for You 📚',
+}) => {
   const bootRef = React.useRef<ReturnType<typeof bootstrapRecommendedBooksState> | null>(null);
   if (bootRef.current === null) {
     bootRef.current = bootstrapRecommendedBooksState();
@@ -205,7 +212,7 @@ export const RecommendedBooksSection: React.FC = () => {
         sx={{ mb: 2 }}
       >
         <Typography variant="h5" component="h2">
-          Recommended for You 📚
+          {sectionTitle}
         </Typography>
       </Stack>
 
