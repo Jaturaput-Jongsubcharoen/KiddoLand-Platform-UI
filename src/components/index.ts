@@ -6,6 +6,7 @@ export { BannerNotice } from './BannerNotice';
 export { IconBadge } from './ui/IconBadge';
 export { PageHeader } from './ui/PageHeader';
 export { ActionTile } from './ui/ActionTile';
+export type { ActionTileTone } from './ui/ActionTile';
 export { FormContainer } from './ui/FormContainer';
 export { CenteredContainer } from './ui/CenteredContainer';
 export { GridSection } from './ui/GridSection';
