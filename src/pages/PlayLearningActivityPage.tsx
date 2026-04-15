@@ -19,6 +19,8 @@ import { CheckCircle2, Sparkles, XCircle } from 'lucide-react';
 import { AppShellLayout, KiddoButton, KiddoCard } from '../components';
 import { LearningWorldScene } from '../components/LearningWorldScene';
 import BackButton from '../components/BackButton';
+import StarRating from '../components/ui/StarRating';
+import CelebrationEffect from '../components/ui/CelebrationEffect';
 import { useApp } from '../context/AppContext';
 import {
   generateLearningActivity,
@@ -140,6 +142,11 @@ const PlayLearningActivityPage: React.FC = () => {
 
     const ageBandStr = AGE_BAND_TO_API_STRING[ageBand!] ?? String(ageBand);
 
+    /* Clear previous quiz immediately so stale questions never flash */
+    setActivity(null);
+    setQuestionIndex(0);
+    setSelectedOption(null);
+    setCorrectCount(0);
     setLoading(true);
     setErrorMessage('');
     try {
@@ -217,32 +224,57 @@ const PlayLearningActivityPage: React.FC = () => {
 
       <Box sx={{ position: 'relative', zIndex: 1 }}>
         <Stack spacing={4}>
-          <Box>
-            <BackButton to={backTarget} />
-          </Box>
+          {/* Back button only on the form screen */}
+          {phase === 'form' && (
+            <Box>
+              <BackButton to={backTarget} />
+            </Box>
+          )}
 
           <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-              <Sparkles size={28} color="#F7931E" />
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 800,
-                  background: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                Play a Learning Activity
-              </Typography>
-            </Stack>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-              Create a short, kid-friendly quiz from a theme and learning goal you choose. Questions
-              and answer order are shuffled each time you play.
-            </Typography>
-
+            {/* Quit button — top-right, only during active quiz */}
+            {phase === 'quiz' && (
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={resetQuizState}
+                  sx={{
+                    borderColor: '#ef4444',
+                    color: '#ef4444',
+                    fontWeight: 600,
+                    borderRadius: 99,
+                    px: 2,
+                    '&:hover': {
+                      borderColor: '#dc2626',
+                      bgcolor: 'rgba(239,68,68,0.08)',
+                    },
+                  }}
+                >
+                  Quit quiz
+                </Button>
+              </Box>
+            )}
             {phase === 'form' && (
               <Stack spacing={2.5}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Sparkles size={28} color="#F7931E" />
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontWeight: 800,
+                      background: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}
+                  >
+                    Play a Learning Activity
+                  </Typography>
+                </Stack>
+                <Typography variant="body1" color="text.secondary">
+                  Create a short, kid-friendly quiz from a theme and learning goal you choose.
+                  Questions and answer order are shuffled each time you play.
+                </Typography>
                 {errorMessage && (
                   <Alert severity="error" onClose={() => setErrorMessage('')}>
                     {errorMessage}
@@ -292,6 +324,8 @@ const PlayLearningActivityPage: React.FC = () => {
                 <Autocomplete
                   freeSolo
                   options={QUIZ_THEME_SUGGESTIONS}
+                  value={theme}
+                  onChange={(_, newValue) => setTheme(typeof newValue === 'string' ? newValue : '')}
                   inputValue={theme}
                   onInputChange={(_, newInputValue) => setTheme(newInputValue)}
                   fullWidth
@@ -311,6 +345,8 @@ const PlayLearningActivityPage: React.FC = () => {
                 <Autocomplete
                   freeSolo
                   options={QUIZ_LEARNING_GOAL_SUGGESTIONS}
+                  value={learningGoal}
+                  onChange={(_, newValue) => setLearningGoal(typeof newValue === 'string' ? newValue : '')}
                   inputValue={learningGoal}
                   onInputChange={(_, newInputValue) => setLearningGoal(newInputValue)}
                   fullWidth
@@ -551,38 +587,167 @@ const PlayLearningActivityPage: React.FC = () => {
               </Stack>
             )}
 
-            {phase === 'complete' && activity && (
-              <Stack spacing={2} alignItems="flex-start">
-                <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                  Great job!
-                </Typography>
-                <Typography variant="body1">
-                  You got <strong>{correctCount}</strong> out of{' '}
-                  <strong>{activity.questions.length}</strong> correct in{' '}
-                  <strong>{activity.title}</strong>.
-                </Typography>
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-                  <KiddoButton
-                    variant="contained"
-                    color="secondary"
-                    glow
-                    onClick={handleGenerate}
-                    disabled={loading}
+            {phase === 'complete' && activity && (() => {
+              const total = activity.questions.length;
+              const filledStars = Math.round((correctCount / total) * 3);
+              const isPerfect = filledStars === 3;
+              const isGood = filledStars === 2;
+              const celebrationLevel: 'high' | 'mid' | null =
+                isPerfect ? 'high' : isGood ? 'mid' : null;
+
+              const RESULT_CONFIG = [
+                {
+                  heading: 'Keep trying! You\'ve got this! 💪',
+                  sub: 'Every quiz makes you smarter. Give it another go!',
+                  gradient: 'linear-gradient(135deg, #64748b 0%, #94a3b8 100%)',
+                },
+                {
+                  heading: 'Nice try! You can do better! 🙂',
+                  sub: 'You\'re on the right track. A little more practice!',
+                  gradient: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)',
+                },
+                {
+                  heading: 'Good job! Keep going! 🌈',
+                  sub: 'Almost there — just a bit more and you\'ll nail it!',
+                  gradient: 'linear-gradient(135deg, #3B82F6 0%, #6366F1 100%)',
+                },
+                {
+                  heading: 'Amazing! 🎉 You did great!',
+                  sub: 'Perfect score! You\'re a superstar — well done!',
+                  gradient: 'linear-gradient(135deg, #FF6B35 0%, #F7C948 100%)',
+                },
+              ];
+              const cfg = RESULT_CONFIG[Math.min(filledStars, 3)];
+
+              return (
+                <Box
+                  sx={{
+                    position: 'relative',
+                    width: '100%',
+                    borderRadius: 3,
+                    overflow: 'hidden',
+                    /* subtle background tint for the result section */
+                    background: isPerfect
+                      ? 'linear-gradient(160deg, #fffbeb 0%, #fef3c7 100%)'
+                      : isGood
+                        ? 'linear-gradient(160deg, #eff6ff 0%, #dbeafe 100%)'
+                        : 'transparent',
+                    p: { xs: 2, sm: 3 },
+                  }}
+                >
+                  {/* confetti + sparkles overlay */}
+                  {celebrationLevel && <CelebrationEffect level={celebrationLevel} />}
+
+                  <Stack
+                    spacing={2.5}
+                    alignItems="center"
+                    sx={{ textAlign: 'center', width: '100%', position: 'relative', zIndex: 1 }}
                   >
-                    New quiz (same settings)
-                  </KiddoButton>
-                  <KiddoButton variant="outlined" onClick={resetQuizState}>
-                    Change topic
-                  </KiddoButton>
-                </Stack>
-                {loading && <LinearProgress sx={{ width: '100%', borderRadius: 1 }} />}
-                {errorMessage && (
-                  <Alert severity="error" sx={{ width: '100%' }}>
-                    {errorMessage}
-                  </Alert>
-                )}
-              </Stack>
-            )}
+                    {/* Stars */}
+                    <StarRating filledStars={filledStars} pulse={isPerfect} />
+
+                    {/* Animated feedback badge */}
+                    <Box
+                      sx={{
+                        opacity: 0,
+                        transform: 'translateY(12px)',
+                        animation: 'resultFadeUp 0.5s ease 0.7s forwards',
+                        '@keyframes resultFadeUp': {
+                          to: { opacity: 1, transform: 'translateY(0)' },
+                        },
+                      }}
+                    >
+                      <Typography
+                        variant="h5"
+                        sx={{
+                          fontWeight: 800,
+                          background: cfg.gradient,
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {cfg.heading}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 0.5, fontStyle: 'italic' }}
+                      >
+                        {cfg.sub}
+                      </Typography>
+                    </Box>
+
+                    {/* Score chip */}
+                    <Box
+                      sx={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        px: 2.5,
+                        py: 0.75,
+                        borderRadius: 99,
+                        border: '2px solid',
+                        borderColor: isPerfect ? '#F7C948' : isGood ? '#3B82F6' : 'divider',
+                        bgcolor: 'background.paper',
+                        boxShadow: isPerfect ? '0 0 12px rgba(247,201,72,0.35)' : 'none',
+                        opacity: 0,
+                        animation: 'resultFadeUp 0.5s ease 0.95s forwards',
+                        '@keyframes resultFadeUp': {
+                          to: { opacity: 1, transform: 'translateY(0)' },
+                        },
+                      }}
+                    >
+                      <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                        {correctCount} / {total}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        correct in <em>{activity.title}</em>
+                      </Typography>
+                    </Box>
+
+                    {/* Action buttons */}
+                    <Stack
+                      direction={{ xs: 'column', sm: 'row' }}
+                      spacing={1.5}
+                      justifyContent="center"
+                      sx={{ width: '100%', pt: 0.5 }}
+                    >
+                      <KiddoButton
+                        variant="contained"
+                        color="secondary"
+                        glow
+                        onClick={handleGenerate}
+                        disabled={loading}
+                      >
+                        New quiz (same settings)
+                      </KiddoButton>
+                      <KiddoButton
+                        variant="outlined"
+                        onClick={resetQuizState}
+                        sx={{
+                          borderColor: '#6366F1',
+                          color: '#6366F1',
+                          '&:hover': {
+                            borderColor: '#4F46E5',
+                            bgcolor: 'rgba(99, 102, 241, 0.08)',
+                          },
+                        }}
+                      >
+                        Change topic
+                      </KiddoButton>
+                    </Stack>
+
+                    {loading && <LinearProgress sx={{ width: '100%', borderRadius: 1 }} />}
+                    {errorMessage && (
+                      <Alert severity="error" sx={{ width: '100%' }}>
+                        {errorMessage}
+                      </Alert>
+                    )}
+                  </Stack>
+                </Box>
+              );
+            })()}
           </KiddoCard>
         </Stack>
       </Box>
