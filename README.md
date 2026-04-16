@@ -46,6 +46,60 @@ KiddoLand is a child-safe AI storytelling platform that generates personalized s
 
 ---
 
+
+## 🗣️ Text-to-Speech (TTS) Integration
+
+### Backend: Optional TTS for Story APIs
+
+- All main story-generation endpoints now support optional TTS audio output:
+  - `POST /ai/sample`
+  - `POST /story/generate-rhyme`
+  - `POST /story/rewrite`
+- Use the `include_tts` flag in your API request:
+  - `include_tts: true` — API returns both story text and TTS audio (base64 + media type).
+  - `include_tts: false` — API returns story text only (default).
+- If TTS fails (e.g., provider outage), you still get the story text—no hard errors.
+- TTS provider routing is more robust (Hugging Face compatibility + fallback provider).
+- Response fields for TTS (when enabled and available):
+  - `tts_audio_base64`
+  - `tts_media_type`
+
+**Example request:**
+```json
+{
+  "prompt": "A bedtime story about a brave turtle",
+  "include_tts": true
+}
+```
+
+**Example response (TTS enabled):**
+```json
+{
+  "story": "...",
+  "tts_audio_base64": "...",
+  "tts_media_type": "audio/wav"
+}
+```
+
+---
+
+### Frontend: TTS Controls in Home Mode
+
+- On `/home/create-story`, you’ll see a small speaker (audio) toggle next to the camera/mic icons.
+- Toggling this ON sends `include_tts: true` in the story request; toggling OFF disables TTS.
+- If TTS audio is returned, a tiny audio player appears in the story preview so you can listen to the generated story.
+- The toggle button matches the mic icon’s style (blue = on, red/crossed = off).
+- If TTS is unavailable or disabled, only story text is shown.
+
+**How to use:**
+1. Go to Home Mode → Create Story.
+2. Use the speaker toggle to enable/disable TTS.
+3. Generate a story. If TTS is enabled and available, listen using the audio player in the preview.
+
+**No configuration needed:** TTS is fully optional and does not affect users who don’t use the toggle.
+
+---
+
 ## ✨ Features
 
 ### Story Creation
