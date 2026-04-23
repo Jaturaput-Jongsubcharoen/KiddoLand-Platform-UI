@@ -4,13 +4,17 @@ import { AppShellLayout } from "../components";
 import { useApp } from "../context/AppContext";
 import { UnifiedStoryInput } from "../components/story-creation/UnifiedStoryInput";
 import { StoryPreviewPanel } from "../components/story-creation/StoryPreviewPanel";
+import { PlanUpgradeDialog } from "../components/PlanUpgradeDialog";
 import {
   generateStorySample,
   generateStoryVideo,
   parseStoryTtsDataUrl,
   saveFavoriteStory,
+  attemptDownload,
   type StoryVideoImageProvider,
 } from "../utils/aiApi";
+import { downloadAudioFromDataUrl, downloadStoryHtmlWithAudio } from "../utils/downloadHelpers";
+import { updateUserPlan } from "../utils/authApi";
 import { deriveTopicFromStoryContext, saveRecommendationActivity } from "../utils/recommendationActivity";
 import {
   ageFromBand,
@@ -24,7 +28,7 @@ import type { ImageAttachment } from "../types/storyOptions";
 import BackButton from "../components/BackButton";
 
 export const CreateStoryUnifiedPage: React.FC = () => {
-  const { appState } = useApp();
+  const { appState, setUserPlan } = useApp();
   const mode = appState.selectedMode ?? "home";
 
   // Input state - NO personal data stored
@@ -69,6 +73,10 @@ export const CreateStoryUnifiedPage: React.FC = () => {
   const [isStoryVideoLoading, setIsStoryVideoLoading] = useState(false);
   const [storyVideoUrl, setStoryVideoUrl] = useState<string | null>(null);
   const [storyVideoError, setStoryVideoError] = useState("");
+  const [isDownloadBusy, setIsDownloadBusy] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState("");
   // To re-enable Story Video narration toggle in future:
   // const [includeStoryVideoVoice, setIncludeStoryVideoVoice] = useState(true);
   const [storyVideoImageProvider, setStoryVideoImageProvider] =
@@ -488,6 +496,77 @@ export const CreateStoryUnifiedPage: React.FC = () => {
     }
   };
 
+  const ensureDownloadAllowed = async (downloadType: "audio" | "pdf"): Promise<boolean> => {
+    if (!appState.accessToken) {
+      setErrorMessage("You are not authenticated. Please sign in again.");
+      return false;
+    }
+    const attempt = await attemptDownload(appState.accessToken, downloadType);
+    if (attempt.allowed) {
+      setErrorMessage("");
+      return true;
+    }
+    setUpgradeError("");
+    setShowUpgradePrompt(true);
+    setErrorMessage(attempt.message);
+    return false;
+  };
+
+  const handleUpgradePlan = async (_selectedPlan: "free" | "paid") => {
+    if (!appState.accessToken) return;
+    try {
+      setIsUpgrading(true);
+      setUpgradeError("");
+      const response = await updateUserPlan(appState.accessToken, "paid");
+      setUserPlan(response.plan);
+      setShowUpgradePrompt(false);
+      setFavoriteMessage("Paid plan enabled. You can continue downloading.");
+    } catch (error) {
+      setUpgradeError(error instanceof Error ? error.message : "Unable to upgrade plan right now.");
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
+
+  const handleDownloadAudio = async () => {
+    const audioSrc = rewrittenStory ? rewrittenStoryAudioSrc : generatedStoryAudioSrc;
+    const storyText = rewrittenStory || generatedStory;
+    if (!audioSrc || !storyText) {
+      setErrorMessage("No audio is available for download yet.");
+      return;
+    }
+    try {
+      setIsDownloadBusy(true);
+      if (!(await ensureDownloadAllowed("audio"))) return;
+      const parsed = parseStoryTtsDataUrl(audioSrc);
+      downloadAudioFromDataUrl(audioSrc, storyText.slice(0, 40), parsed?.ttsMediaType ?? "audio/mpeg");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to download audio.");
+    } finally {
+      setIsDownloadBusy(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    const storyText = rewrittenStory || generatedStory;
+    if (!storyText) return;
+    try {
+      setIsDownloadBusy(true);
+      if (!(await ensureDownloadAllowed("pdf"))) return;
+      const audioSrc = rewrittenStory ? rewrittenStoryAudioSrc : generatedStoryAudioSrc;
+      const audioUrl = audioSrc ?? null;
+      downloadStoryHtmlWithAudio({
+        title: rewrittenStory ? "Refined Story" : "Story",
+        story: storyText,
+        audioUrl,
+      });
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to download PDF.");
+    } finally {
+      setIsDownloadBusy(false);
+    }
+  };
+
   const handleRemoveImage = (id: string) => {
     setImageError("");
     setUploadedImages((prev) => {
@@ -610,9 +689,21 @@ export const CreateStoryUnifiedPage: React.FC = () => {
             storyVideoError={storyVideoError}
             storyVideoImageProvider={storyVideoImageProvider}
             onStoryVideoImageProviderChange={setStoryVideoImageProvider}
+            onDownloadAudio={handleDownloadAudio}
+            onDownloadPdf={handleDownloadPdf}
+            isDownloadBusy={isDownloadBusy}
           />
         )}
       </Stack>
+      <PlanUpgradeDialog
+        open={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+        onConfirmPlan={handleUpgradePlan}
+        currentPlan={appState.userPlan}
+        allowFreeSelection={false}
+        isSubmitting={isUpgrading}
+        errorMessage={upgradeError}
+      />
     </AppShellLayout>
   );
 };

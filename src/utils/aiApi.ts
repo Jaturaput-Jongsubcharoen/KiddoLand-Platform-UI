@@ -39,6 +39,15 @@ interface StoryRewriteResponse {
   tts_media_type?: string | null;
 }
 
+export interface DownloadAttemptResponse {
+  allowed: boolean;
+  plan: 'free' | 'paid';
+  used_downloads: number;
+  monthly_limit: number | null;
+  remaining_downloads: number | null;
+  message: string;
+}
+
 interface SaveFavoriteResponse {
   saved: boolean;
   message: string;
@@ -511,6 +520,29 @@ export const toggleFavorite = async (
     }
 
     throw new Error(backendMessage || 'Unable to update favorite status right now.');
+  }
+
+  return response.json();
+};
+
+export const attemptDownload = async (
+  accessToken: string,
+  downloadType: 'audio' | 'pdf'
+): Promise<DownloadAttemptResponse> => {
+  const apiBaseUrl = resolveApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/ai/downloads/attempt`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ download_type: downloadType }),
+  });
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({}));
+    const backendMessage = typeof errorPayload?.detail === 'string' ? errorPayload.detail : '';
+    throw new Error(backendMessage || 'Unable to verify download allowance right now.');
   }
 
   return response.json();

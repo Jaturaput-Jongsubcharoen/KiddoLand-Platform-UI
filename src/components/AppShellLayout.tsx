@@ -8,11 +8,19 @@ import {
   Menu,
   MenuItem,
   Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Button,
+  Typography,
 } from "@mui/material";
 import { User, Home, School, LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { SharedNavBar } from "./SharedNavBar";
+import { updateUserPlan } from "../utils/authApi";
+import { PlanUpgradeDialog } from "./PlanUpgradeDialog";
 
 interface AppShellLayoutProps {
   children: ReactNode;
@@ -25,8 +33,12 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { appState, logout } = useApp();
+  const { appState, logout, setUserPlan } = useApp();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [showLogoutPrompt, setShowLogoutPrompt] = React.useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
+  const [isUpgrading, setIsUpgrading] = React.useState(false);
+  const [upgradeError, setUpgradeError] = React.useState("");
 
   const isHomeMode = appState.selectedMode === "home";
   const isInstitutionMode = appState.selectedMode === "institution";
@@ -44,9 +56,26 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
   };
 
   const handleLogout = () => {
+    setShowLogoutPrompt(false);
     logout();
     handleClose();
     navigate("/");
+  };
+
+  const handleChangePlan = async (plan: "free" | "paid") => {
+    if (!appState.accessToken) return;
+    try {
+      setIsUpgrading(true);
+      setUpgradeError("");
+      const response = await updateUserPlan(appState.accessToken, plan);
+      setUserPlan(response.plan);
+      setShowUpgradePrompt(false);
+      handleClose();
+    } catch (error) {
+      setUpgradeError(error instanceof Error ? error.message : "Unable to update plan right now.");
+    } finally {
+      setIsUpgrading(false);
+    }
   };
 
   const getModeLabel = () => {
@@ -171,6 +200,20 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
 
                     <Divider sx={{ my: 1 }} />
 
+                    <MenuItem disabled>
+                      Plan: {appState.userPlan === "paid" ? "Paid" : "Free"}
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        setUpgradeError("");
+                        setShowUpgradePrompt(true);
+                        handleClose();
+                      }}
+                    >
+                      Change Plan
+                    </MenuItem>
+                    <Divider sx={{ my: 1 }} />
+
                     {/* MOBILE NAV ITEMS */}
                     <Box sx={{ display: { xs: "block", md: "none" } }}>
                       {isInstitutionMode ? (
@@ -205,7 +248,7 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
                     </Box>
 
                     {/* LOGOUT */}
-                    <MenuItem onClick={handleLogout}>
+                    <MenuItem onClick={() => setShowLogoutPrompt(true)}>
                       <LogOut size={18} style={{ marginRight: 8 }} />
                       Logout
                     </MenuItem>
@@ -229,6 +272,46 @@ export const AppShellLayout: React.FC<AppShellLayoutProps> = ({
           {children}
         </Container>
       </Box>
+      <PlanUpgradeDialog
+        open={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+        onConfirmPlan={handleChangePlan}
+        currentPlan={appState.userPlan}
+        allowFreeSelection
+        isSubmitting={isUpgrading}
+        errorMessage={upgradeError}
+      />
+      <Dialog open={showLogoutPrompt} onClose={() => setShowLogoutPrompt(false)}>
+        <DialogTitle>Before you log out</DialogTitle>
+        <DialogContent>
+          <Typography>
+            You are currently on the {appState.userPlan} plan. Upgrade to paid to unlock unlimited
+            audio and PDF downloads.
+          </Typography>
+          {upgradeError && (
+            <Typography color="error" sx={{ mt: 1.5 }}>
+              {upgradeError}
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {appState.userPlan === "free" && (
+            <Button
+              onClick={() => {
+                setUpgradeError("");
+                setShowUpgradePrompt(true);
+              }}
+              disabled={isUpgrading}
+            >
+              Upgrade Plan
+            </Button>
+          )}
+          <Button onClick={handleLogout} color="error">
+            Logout
+          </Button>
+          <Button onClick={() => setShowLogoutPrompt(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

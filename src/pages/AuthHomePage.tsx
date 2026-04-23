@@ -100,7 +100,7 @@ export const AuthHomePage: React.FC = () => {
       const fallbackName = fallbackNameFromEmail(emailForFallback);
       const finalUserName = (userName && userName.trim()) || fallbackName;
 
-      login(signInEmail, response.access_token, response.role, tokenExpiresAt, finalUserName);
+      login(signInEmail, response.access_token, response.role, tokenExpiresAt, finalUserName, response.plan);
       localStorage.setItem('accessToken', response.access_token);
       navigate('/home');
     } catch (error) {
@@ -151,7 +151,7 @@ export const AuthHomePage: React.FC = () => {
       const fallbackName = fallbackNameFromEmail(emailForFallback);
       const finalUserName = (preferredName && preferredName.trim()) || fallbackName;
 
-      login(signUpEmail, response.access_token, response.role, tokenExpiresAt, finalUserName);
+      login(signUpEmail, response.access_token, response.role, tokenExpiresAt, finalUserName, response.plan);
       localStorage.setItem('accessToken', response.access_token);
       navigate('/home');
     } catch (error) {

@@ -111,7 +111,7 @@ export const AuthInstitutionPage: React.FC = () => {
       const fallbackName = fallbackNameFromEmail(emailForFallback);
       const finalUserName = (userName && userName.trim()) || fallbackName;
 
-      login(signInEmail, response.access_token, response.role, tokenExpiresAt, finalUserName);
+      login(signInEmail, response.access_token, response.role, tokenExpiresAt, finalUserName, response.plan);
       navigate('/institution');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to sign in.';
@@ -179,7 +179,7 @@ export const AuthInstitutionPage: React.FC = () => {
       const fallbackName = fallbackNameFromEmail(emailForFallback);
       const finalUserName = (userName && userName.trim()) || fallbackName;
 
-      login(signUpEmail, resp.access_token, resp.role, tokenExpiresAt, finalUserName);
+      login(signUpEmail, resp.access_token, resp.role, tokenExpiresAt, finalUserName, resp.plan);
       navigate('/institution');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to sign up.';

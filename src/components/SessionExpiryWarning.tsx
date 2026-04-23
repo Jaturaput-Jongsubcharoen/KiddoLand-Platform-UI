@@ -58,6 +58,7 @@ export const SessionExpiryWarning: React.FC = () => {
         accessToken: response.access_token,
         tokenExpiresAt: newExpiresAt,
         userRole: response.role,
+        userPlan: response.plan,
         userEmail: response.email,
         userName: response.full_name || response.name,
       });

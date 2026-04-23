@@ -10,18 +10,23 @@ import {
   Stack,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { X, Minimize2, Maximize2, Heart } from "lucide-react";
+import { X, Minimize2, Maximize2, Heart, Download } from "lucide-react";
 import { AppShellLayout, KiddoCard, KiddoButton } from "../components";
+import { PlanUpgradeDialog } from "../components/PlanUpgradeDialog";
 import { useApp } from "../context/AppContext";
 import {
   StoryHistoryItem,
+  attemptDownload,
   getFavoriteStories,
   toggleFavorite,
 } from "../utils/aiApi";
+import { downloadAudioFromDataUrl, downloadStoryHtmlWithAudio } from "../utils/downloadHelpers";
+import { updateUserPlan } from "../utils/authApi";
 import {
   getHistoryCardTitle,
   getContentKind,
@@ -43,7 +48,7 @@ const toTimestamp = (value: string | null): number => {
 };
 
 export const StoryFavoritesPage: React.FC = () => {
-  const { appState } = useApp();
+  const { appState, setUserPlan } = useApp();
   const [items, setItems] = useState<StoryHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -51,6 +56,10 @@ export const StoryFavoritesPage: React.FC = () => {
     null,
   );
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isDownloadBusy, setIsDownloadBusy] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState("");
 
   const [kindFilter, setKindFilter] = useState<HistoryContentKindFilter>("all");
 
@@ -144,6 +153,48 @@ export const StoryFavoritesPage: React.FC = () => {
     setDisplayCount((prev) => prev + ITEMS_PER_PAGE);
   };
 
+  const ensureDownloadAllowed = async (downloadType: "audio" | "pdf"): Promise<boolean> => {
+    if (!appState.accessToken) return false;
+    const attempt = await attemptDownload(appState.accessToken, downloadType);
+    if (attempt.allowed) return true;
+    setUpgradeError("");
+    setShowUpgradePrompt(true);
+    setErrorMessage(attempt.message);
+    return false;
+  };
+
+  const handleUpgradePlan = async (_selectedPlan: "free" | "paid") => {
+    if (!appState.accessToken) return;
+    try {
+      setIsUpgrading(true);
+      setUpgradeError("");
+      const response = await updateUserPlan(appState.accessToken, "paid");
+      setUserPlan(response.plan);
+      setShowUpgradePrompt(false);
+      setErrorMessage("");
+    } catch (error) {
+      setUpgradeError(error instanceof Error ? error.message : "Unable to upgrade plan right now.");
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
+
+  const handleCardDownload = async (item: StoryHistoryItem) => {
+    try {
+      setIsDownloadBusy(true);
+      if (!(await ensureDownloadAllowed("pdf"))) return;
+      const audioSrc = getHistoryAudioSrc(item);
+      const audioUrl = audioSrc ?? null;
+      downloadStoryHtmlWithAudio({
+        title: getHistoryCardTitle(item),
+        story: item.story,
+        audioUrl,
+      });
+    } finally {
+      setIsDownloadBusy(false);
+    }
+  };
+
   return (
     <AppShellLayout>
       <Stack spacing={3}>
@@ -215,22 +266,48 @@ export const StoryFavoritesPage: React.FC = () => {
                     onClick={() => setSelectedItem(item)}
                   >
                     {/* Remove from Favorites Heart - Top Right */}
-                    <IconButton
-                      onClick={(e) => handleFavoriteClick(e, item)}
+                    <Box
                       sx={{
                         position: "absolute",
                         top: 8,
                         right: 8,
-                        color: "#E91E63",
-                        transition: "all 0.2s ease",
-                        "&:hover": {
-                          color: "#999",
-                          transform: "scale(1.15)",
-                        },
+                        display: "flex",
+                        gap: 0.5,
                       }}
                     >
-                      <Heart size={20} fill="#E91E63" strokeWidth={2} />
-                    </IconButton>
+                      <Tooltip title="Download Story File">
+                        <IconButton
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleCardDownload(item);
+                          }}
+                          disabled={isDownloadBusy}
+                          sx={{
+                            color: "text.secondary",
+                            transition: "all 0.2s ease",
+                            "&:hover": {
+                              color: "primary.main",
+                              transform: "scale(1.12)",
+                            },
+                          }}
+                        >
+                          <Download size={18} />
+                        </IconButton>
+                      </Tooltip>
+                      <IconButton
+                        onClick={(e) => handleFavoriteClick(e, item)}
+                        sx={{
+                          color: "#E91E63",
+                          transition: "all 0.2s ease",
+                          "&:hover": {
+                            color: "#999",
+                            transform: "scale(1.15)",
+                          },
+                        }}
+                      >
+                        <Heart size={20} fill="#E91E63" strokeWidth={2} />
+                      </IconButton>
+                    </Box>
 
                     <Stack spacing={1}>
                       <Typography variant="h6" sx={{ fontWeight: 700, pr: 5 }}>
@@ -385,6 +462,46 @@ export const StoryFavoritesPage: React.FC = () => {
                   />
                 </Box>
               )}
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mt: 2 }}>
+                <KiddoButton
+                  variant="outlined"
+                  disabled={isDownloadBusy || !getHistoryAudioSrc(selectedItem)}
+                  onClick={async () => {
+                    const audioSrc = getHistoryAudioSrc(selectedItem);
+                    if (!audioSrc) return;
+                    try {
+                      setIsDownloadBusy(true);
+                      if (!(await ensureDownloadAllowed("audio"))) return;
+                      downloadAudioFromDataUrl(audioSrc, getHistoryCardTitle(selectedItem));
+                    } finally {
+                      setIsDownloadBusy(false);
+                    }
+                  }}
+                >
+                  Download Audio
+                </KiddoButton>
+                <KiddoButton
+                  variant="outlined"
+                  disabled={isDownloadBusy}
+                  onClick={async () => {
+                    try {
+                      setIsDownloadBusy(true);
+                      if (!(await ensureDownloadAllowed("pdf"))) return;
+                      const audioSrc = getHistoryAudioSrc(selectedItem);
+                      const audioUrl = audioSrc ?? null;
+                      downloadStoryHtmlWithAudio({
+                        title: getHistoryCardTitle(selectedItem),
+                        story: selectedItem.story,
+                        audioUrl,
+                      });
+                    } finally {
+                      setIsDownloadBusy(false);
+                    }
+                  }}
+                >
+                  Download Story File
+                </KiddoButton>
+              </Stack>
             </Box>
 
             {/* Story Content */}
@@ -403,6 +520,15 @@ export const StoryFavoritesPage: React.FC = () => {
           </>
         )}
       </Dialog>
+      <PlanUpgradeDialog
+        open={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+        onConfirmPlan={handleUpgradePlan}
+        currentPlan={appState.userPlan}
+        allowFreeSelection={false}
+        isSubmitting={isUpgrading}
+        errorMessage={upgradeError}
+      />
     </AppShellLayout>
   );
 };

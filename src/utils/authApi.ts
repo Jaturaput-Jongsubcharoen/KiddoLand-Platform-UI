@@ -5,6 +5,7 @@ export interface AuthLoginResponse {
   expires_in: number;
   role: string;
   mode: AuthMode;
+  plan: 'free' | 'paid';
   email?: string;
   name?: string;
   username?: string;
@@ -22,6 +23,13 @@ export interface UserProfile {
   full_name?: string;
   role?: string;
   mode?: AuthMode;
+  plan?: 'free' | 'paid';
+}
+
+export interface PlanUpdateResponse {
+  success: boolean;
+  plan: 'free' | 'paid';
+  message: string;
 }
 
 export interface AuthRegisterRequest {
@@ -117,6 +125,29 @@ export const refreshSession = async (accessToken: string): Promise<AuthLoginResp
   if (!response.ok) {
     const errorPayload = await response.json().catch(() => ({}));
     const errorMessage = errorPayload?.detail || 'Unable to refresh session.';
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+};
+
+export const updateUserPlan = async (
+  accessToken: string,
+  plan: 'free' | 'paid'
+): Promise<PlanUpdateResponse> => {
+  const apiBaseUrl = resolveApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/auth/plan`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ plan }),
+  });
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({}));
+    const errorMessage = errorPayload?.detail || 'Unable to update plan.';
     throw new Error(errorMessage);
   }
 
