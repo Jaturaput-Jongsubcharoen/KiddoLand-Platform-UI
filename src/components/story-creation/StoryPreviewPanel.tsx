@@ -38,6 +38,9 @@ interface StoryPreviewPanelProps {
   // onToggleStoryVideoVoice?: (next: boolean) => void;
   storyVideoImageProvider?: StoryVideoImageProvider;
   onStoryVideoImageProviderChange?: (next: StoryVideoImageProvider) => void;
+  onDownloadAudio?: () => void;
+  onDownloadPdf?: () => void;
+  isDownloadBusy?: boolean;
 }
 
 export const StoryPreviewPanel: React.FC<StoryPreviewPanelProps> = ({
@@ -58,6 +61,9 @@ export const StoryPreviewPanel: React.FC<StoryPreviewPanelProps> = ({
   // onToggleStoryVideoVoice,
   storyVideoImageProvider = "gemini",
   onStoryVideoImageProviderChange,
+  onDownloadAudio,
+  onDownloadPdf,
+  isDownloadBusy = false,
 }) => {
   const [copied, setCopied] = useState(false);
 
@@ -204,6 +210,21 @@ export const StoryPreviewPanel: React.FC<StoryPreviewPanelProps> = ({
                   sx={{ width: "100%", maxWidth: 640, borderRadius: 2, bgcolor: "#000" }}
                 />
               </Box>
+            )}
+          </Stack>
+        )}
+
+        {(onDownloadAudio || onDownloadPdf) && (
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+            {onDownloadAudio && (
+              <Button variant="outlined" onClick={onDownloadAudio} disabled={isDownloadBusy}>
+                Download Audio
+              </Button>
+            )}
+            {onDownloadPdf && (
+              <Button variant="outlined" onClick={onDownloadPdf} disabled={isDownloadBusy}>
+                Download Story File
+              </Button>
             )}
           </Stack>
         )}

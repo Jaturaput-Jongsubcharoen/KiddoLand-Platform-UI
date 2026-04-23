@@ -45,9 +45,13 @@ import { buildImageContext, processImageFiles } from "../utils/imageProcessing";
 import type { ImageAttachment } from "../types/storyOptions";
 import { AppShellLayout, BannerNotice, KiddoButton, KiddoCard } from "../components";
 import { LearningWorldScene } from "../components/LearningWorldScene";
+import { PlanUpgradeDialog } from "../components/PlanUpgradeDialog";
 import BackButton from "../components/BackButton";
 import { useApp } from "../context/AppContext";
 import { generateRhyme, saveFavoriteStory } from "../utils/aiApi";
+import { attemptDownload } from "../utils/aiApi";
+import { downloadAudioFromDataUrl, downloadStoryHtmlWithAudio } from "../utils/downloadHelpers";
+import { updateUserPlan } from "../utils/authApi";
 import { saveRecommendationActivity, sanitizeTopic } from "../utils/recommendationActivity";
 import { TONES } from "../types/storyOptions";
 import {
@@ -116,7 +120,7 @@ const LENGTH_LABELS: Record<RhymeLength, string> = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 const CreateRhymePage: React.FC = () => {
-  const { appState } = useApp();
+  const { appState, setUserPlan } = useApp();
   const isInstitution = appState.selectedMode === "institution";
   const backTarget = isInstitution ? "/institution" : undefined;
 
@@ -168,6 +172,10 @@ const CreateRhymePage: React.FC = () => {
   const [isFavoriteSaved, setIsFavoriteSaved] = useState(false);
   const [favoriteMessage, setFavoriteMessage] = useState("");
   const [copied, setCopied] = useState(false);
+  const [isDownloadBusy, setIsDownloadBusy] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState("");
 
   // Keep topicRef in sync for voice handler closure
   useEffect(() => { topicRef.current = topic; }, [topic]);
@@ -567,6 +575,65 @@ const CreateRhymePage: React.FC = () => {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // clipboard unavailable
+    }
+  };
+
+  const ensureDownloadAllowed = async (downloadType: "audio" | "pdf"): Promise<boolean> => {
+    if (!appState.accessToken) {
+      setErrorMessage("You are not authenticated. Please sign in again.");
+      return false;
+    }
+    const attempt = await attemptDownload(appState.accessToken, downloadType);
+    if (attempt.allowed) return true;
+    setUpgradeError("");
+    setShowUpgradePrompt(true);
+    setErrorMessage(attempt.message);
+    return false;
+  };
+
+  const handleUpgradePlan = async (_selectedPlan: "free" | "paid") => {
+    if (!appState.accessToken) return;
+    try {
+      setIsUpgrading(true);
+      setUpgradeError("");
+      const response = await updateUserPlan(appState.accessToken, "paid");
+      setUserPlan(response.plan);
+      setShowUpgradePrompt(false);
+      setFavoriteMessage("Paid plan enabled. You can continue downloading.");
+    } catch (error) {
+      setUpgradeError(error instanceof Error ? error.message : "Unable to upgrade plan right now.");
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
+
+  const handleDownloadAudio = async () => {
+    if (!rhymeAudioSrc) {
+      setErrorMessage("No rhyme audio is available for download.");
+      return;
+    }
+    try {
+      setIsDownloadBusy(true);
+      if (!(await ensureDownloadAllowed("audio"))) return;
+      downloadAudioFromDataUrl(rhymeAudioSrc, "rhyme-audio");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to download audio.");
+    } finally {
+      setIsDownloadBusy(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!rhyme) return;
+    try {
+      setIsDownloadBusy(true);
+      if (!(await ensureDownloadAllowed("pdf"))) return;
+      const audioUrl = rhymeAudioSrc ?? null;
+      downloadStoryHtmlWithAudio({ title: "Rhyme", story: rhyme, audioUrl });
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to download PDF.");
+    } finally {
+      setIsDownloadBusy(false);
     }
   };
 
@@ -1343,6 +1410,15 @@ const CreateRhymePage: React.FC = () => {
                   </Alert>
                 )}
 
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+                  <KiddoButton variant="outlined" onClick={handleDownloadAudio} disabled={isDownloadBusy || !rhymeAudioSrc}>
+                    Download Audio
+                  </KiddoButton>
+                  <KiddoButton variant="outlined" onClick={handleDownloadPdf} disabled={isDownloadBusy}>
+                    Download Story File
+                  </KiddoButton>
+                </Stack>
+
                 <Typography variant="body1" sx={{ whiteSpace: "pre-line", lineHeight: 1.8 }}>
                   {rhyme}
                 </Typography>
@@ -1351,6 +1427,15 @@ const CreateRhymePage: React.FC = () => {
           )}
         </Stack>
       </Box>
+      <PlanUpgradeDialog
+        open={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+        onConfirmPlan={handleUpgradePlan}
+        currentPlan={appState.userPlan}
+        allowFreeSelection={false}
+        isSubmitting={isUpgrading}
+        errorMessage={upgradeError}
+      />
     </AppShellLayout>
   );
 };

@@ -9,20 +9,30 @@ interface AppState {
   userName: string | null;
   accessToken: string | null;
   userRole: string | null;
+  userPlan: "free" | "paid";
   tokenExpiresAt: number | null;
 }
 
 interface AppContextType {
   appState: AppState;
   setMode: (mode: AppMode) => void;
-  login: (email: string, accessToken?: string, userRole?: string, tokenExpiresAt?: number, userName?: string) => void;
+  login: (
+    email: string,
+    accessToken?: string,
+    userRole?: string,
+    tokenExpiresAt?: number,
+    userName?: string,
+    userPlan?: "free" | "paid"
+  ) => void;
   updateSession: (payload: {
     accessToken: string;
     tokenExpiresAt: number;
     userRole?: string;
     userEmail?: string;
     userName?: string;
+    userPlan?: "free" | "paid";
   }) => void;
+  setUserPlan: (plan: "free" | "paid") => void;
   logout: () => void;
 }
 
@@ -36,7 +46,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored) as Partial<AppState>;
+        return {
+          selectedMode: parsed.selectedMode ?? null,
+          isAuthenticated: parsed.isAuthenticated ?? false,
+          userEmail: parsed.userEmail ?? null,
+          userName: parsed.userName ?? null,
+          accessToken: parsed.accessToken ?? null,
+          userRole: parsed.userRole ?? null,
+          userPlan: parsed.userPlan === "paid" ? "paid" : "free",
+          tokenExpiresAt: parsed.tokenExpiresAt ?? null,
+        };
       } catch {
         return {
           selectedMode: null,
@@ -45,6 +65,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           userName: null,
           accessToken: null,
           userRole: null,
+          userPlan: "free",
           tokenExpiresAt: null,
         };
       }
@@ -56,6 +77,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       userName: null,
       accessToken: null,
       userRole: null,
+      userPlan: "free",
       tokenExpiresAt: null,
     };
   });
@@ -75,11 +97,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       userName: null,
       accessToken: null,
       userRole: null,
+      userPlan: "free",
       tokenExpiresAt: null,
     }));
   };
 
-  const login = (email: string, accessToken?: string, userRole?: string, tokenExpiresAt?: number, userName?: string) => {
+  const login = (
+    email: string,
+    accessToken?: string,
+    userRole?: string,
+    tokenExpiresAt?: number,
+    userName?: string,
+    userPlan: "free" | "paid" = "free",
+  ) => {
     setAppState(prev => ({
       ...prev,
       isAuthenticated: true,
@@ -87,6 +117,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       userName: userName ?? null,
       accessToken: accessToken ?? null,
       userRole: userRole ?? null,
+      userPlan,
       tokenExpiresAt: tokenExpiresAt ?? null,
     }));
   };
@@ -104,9 +135,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       accessToken: payload.accessToken,
       tokenExpiresAt: payload.tokenExpiresAt,
       userRole: payload.userRole ?? prev.userRole,
+      userPlan: payload.userPlan ?? prev.userPlan,
       userEmail: payload.userEmail ?? prev.userEmail,
       userName: payload.userName ?? prev.userName,
     }));
+  };
+
+  const setUserPlan = (plan: "free" | "paid") => {
+    setAppState((prev) => ({ ...prev, userPlan: plan }));
   };
 
   const logout = () => {
@@ -117,6 +153,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       userName: null,
       accessToken: null,
       userRole: null,
+      userPlan: "free",
       tokenExpiresAt: null,
     });
   };
@@ -142,7 +179,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [appState.isAuthenticated, appState.tokenExpiresAt, logout]);
 
   return (
-    <AppContext.Provider value={{ appState, setMode, login, updateSession, logout }}>
+    <AppContext.Provider value={{ appState, setMode, login, updateSession, setUserPlan, logout }}>
       {children}
     </AppContext.Provider>
   );
