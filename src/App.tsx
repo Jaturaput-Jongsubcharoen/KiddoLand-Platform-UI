@@ -5,9 +5,9 @@ import {
   Route,
   Navigate,
 } from 'react-router-dom';
-import { ThemeProvider, CssBaseline } from '@mui/material';
+  import { ThemeProvider, CssBaseline, Box, CircularProgress, Typography } from '@mui/material';
 import { kiddoTheme } from './theme/theme';
-import { AppProvider } from './context/AppContext';
+  import { AppProvider, useApp } from './context/AppContext';
 import { ProtectedRoute } from './components';
 import SessionExpiryWarning from './components/SessionExpiryWarning';
 
@@ -23,6 +23,87 @@ import StoryFavoritesPage from './pages/StoryFavoritesPage';
 import CreateRhymePage from './pages/CreateRhymePage';
 import PlayLearningActivityPage from './pages/PlayLearningActivityPage';
 
+const RootEntryRoute: React.FC = () => {
+  const { appState, sessionStatus } = useApp();
+
+  if (sessionStatus === 'booting') {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
+        <CircularProgress />
+        <Typography variant="body1" color="text.secondary">
+          Starting KiddoLand demo...
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (appState.isAuthenticated && appState.selectedMode === 'institution') {
+    return <Navigate to="/institution" replace />;
+  }
+
+  if (appState.isAuthenticated || appState.accessToken || appState.userRole === 'Guest') {
+    return <Navigate to="/home" replace />;
+  }
+
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        gap: 2,
+      }}
+    >
+      <CircularProgress />
+      <Typography variant="body1" color="text.secondary">
+        Starting KiddoLand demo...
+      </Typography>
+    </Box>
+  );
+};
+
+const SelectModeRoute: React.FC = () => {
+  const { appState, sessionStatus } = useApp();
+
+  if (sessionStatus === 'booting') {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
+        <CircularProgress />
+        <Typography variant="body1" color="text.secondary">
+          Starting KiddoLand demo...
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (appState.isAuthenticated || appState.accessToken || appState.userRole === 'Guest') {
+    const targetPath = appState.selectedMode === 'institution' ? '/institution' : '/home';
+    return <Navigate to={targetPath} replace />;
+  }
+
+  return <ModeSelectPage />;
+};
+
 const App: React.FC = () => {
   return (
     <ThemeProvider theme={kiddoTheme}>
@@ -35,7 +116,8 @@ const App: React.FC = () => {
           <SessionExpiryWarning />
           <Routes>
             {/* Mode Selection */}
-            <Route path="/" element={<ModeSelectPage />} />
+            <Route path="/" element={<RootEntryRoute />} />
+            <Route path="/select-mode" element={<SelectModeRoute />} />
 
             {/* Auth Routes */}
             <Route path="/auth/home" element={<AuthHomePage />} />

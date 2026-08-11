@@ -369,7 +369,18 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
         : "Click to start voice input";
 
   return (
-    <KiddoCard hoverEffect={false} sx={{ p: 4, borderRadius: 2 }}>
+    <KiddoCard
+      hoverEffect={false}
+      sx={{
+        p: 4,
+        borderRadius: 2,
+        background:
+          'linear-gradient(160deg, rgba(255,255,255,0.46) 0%, rgba(255,255,255,0.2) 100%)',
+        backdropFilter: 'blur(20px) saturate(150%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(150%)',
+        border: '1px solid rgba(255,255,255,0.5)',
+      }}
+    >
       <Stack spacing={3}>
         {/* Header */}
         <Box>
@@ -497,7 +508,7 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
               right: -8,
               bottom: -8,
               background:
-                "linear-gradient(135deg, rgba(255,107,53,0.1), rgba(78,205,196,0.1))",
+                "linear-gradient(135deg, rgba(255,107,53,0.15), rgba(78,205,196,0.13))",
               borderRadius: 2,
               zIndex: 0,
             },
@@ -508,9 +519,12 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
               position: "relative",
               zIndex: 1,
               border: "1px solid",
-              borderColor: "rgba(0, 0, 0, 0.23)",
+              borderColor: "rgba(255,255,255,0.62)",
               borderRadius: 2,
-              backgroundColor: "#fff",
+              background:
+                "linear-gradient(165deg, rgba(255,255,255,0.48) 0%, rgba(247,251,255,0.24) 100%)",
+              backdropFilter: "blur(12px) saturate(140%)",
+              WebkitBackdropFilter: "blur(12px) saturate(140%)",
               overflow: "hidden",
               "&:focus-within": {
                 borderColor: "primary.main",
@@ -524,7 +538,7 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
                   px: 1.5,
                   pt: 1.5,
                   pb: 1,
-                  backgroundColor: "#fff",
+                  backgroundColor: "rgba(255,255,255,0.16)",
                 }}
               >
                 {imageError && (
@@ -631,7 +645,7 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
             <Box
               sx={{
                 position: "relative",
-                bgcolor: "#fff",
+                bgcolor: "rgba(255,255,255,0.12)",
               }}
             >
               <TextField
@@ -715,7 +729,7 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
                         borderColor: micColor,
                         backgroundColor: isRecording
                           ? "rgba(239, 68, 68, 0.12)"
-                          : "rgba(255, 255, 255, 0.95)",
+                          : "rgba(255, 255, 255, 0.68)",
                         boxShadow: "none",
                         animation: isRecording
                           ? `${micPulse} 1.8s infinite`
@@ -724,12 +738,12 @@ export const UnifiedStoryInput: React.FC<UnifiedStoryInputProps> = ({
                           borderColor: micColor,
                           backgroundColor: isRecording
                             ? "rgba(239, 68, 68, 0.18)"
-                            : "rgba(255, 255, 255, 1)",
+                            : "rgba(255, 255, 255, 0.84)",
                         },
                         "&:disabled": {
                           borderColor: "text.disabled",
                           color: "text.disabled",
-                          backgroundColor: "rgba(255, 255, 255, 0.7)",
+                          backgroundColor: "rgba(255, 255, 255, 0.55)",
                         },
                       }}
                     >

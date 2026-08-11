@@ -20,29 +20,32 @@ const TONE_STYLES: Record<
 > = {
   story: {
     border: '#2563eb',
-    cardBg: 'linear-gradient(168deg, #ffffff 0%, #f0f7ff 45%, #dbeafe 100%)',
+    cardBg:
+      'linear-gradient(165deg, rgba(196,226,255,0.34) 0%, rgba(255,255,255,0.2) 45%, rgba(175,214,255,0.16) 100%)',
     iconBg: 'linear-gradient(145deg, #60a5fa 0%, #2563eb 55%, #1d4ed8 100%)',
     iconColor: '#ffffff',
-    glow: '0 10px 36px rgba(37, 99, 235, 0.28)',
-    glowHover: '0 18px 48px rgba(37, 99, 235, 0.42)',
+    glow: '0 10px 32px rgba(37, 99, 235, 0.22)',
+    glowHover: '0 14px 38px rgba(37, 99, 235, 0.3)',
     titleColor: '#1e3a8a',
   },
   rhyme: {
     border: '#c026d3',
-    cardBg: 'linear-gradient(168deg, #ffffff 0%, #fdf4ff 45%, #fae8ff 100%)',
+    cardBg:
+      'linear-gradient(165deg, rgba(245,206,255,0.32) 0%, rgba(255,255,255,0.2) 45%, rgba(231,194,255,0.16) 100%)',
     iconBg: 'linear-gradient(145deg, #e879f9 0%, #c026d3 55%, #a21caf 100%)',
     iconColor: '#ffffff',
-    glow: '0 10px 36px rgba(192, 38, 211, 0.26)',
-    glowHover: '0 18px 48px rgba(192, 38, 211, 0.4)',
+    glow: '0 10px 32px rgba(192, 38, 211, 0.22)',
+    glowHover: '0 14px 38px rgba(192, 38, 211, 0.3)',
     titleColor: '#86198f',
   },
   play: {
     border: '#ea580c',
-    cardBg: 'linear-gradient(168deg, #ffffff 0%, #fff7ed 45%, #ffedd5 100%)',
+    cardBg:
+      'linear-gradient(165deg, rgba(255,226,194,0.34) 0%, rgba(255,255,255,0.2) 45%, rgba(255,216,166,0.16) 100%)',
     iconBg: 'linear-gradient(145deg, #fb923c 0%, #ea580c 55%, #c2410c 100%)',
     iconColor: '#ffffff',
-    glow: '0 10px 36px rgba(234, 88, 12, 0.3)',
-    glowHover: '0 18px 48px rgba(234, 88, 12, 0.45)',
+    glow: '0 10px 32px rgba(234, 88, 12, 0.22)',
+    glowHover: '0 14px 38px rgba(234, 88, 12, 0.3)',
     titleColor: '#9a3412',
   },
 };
@@ -88,13 +91,26 @@ export const ActionTile: React.FC<ActionTileProps> = ({
           ? {
               borderWidth: 0,
               border: '3px solid',
-              borderColor: t.border,
+              borderColor: `${t.border}66`,
               background: t.cardBg,
+              backdropFilter: 'blur(18px) saturate(150%)',
+              WebkitBackdropFilter: 'blur(18px) saturate(150%)',
               boxShadow: t.glow,
               transition: 'transform 0.22s ease, box-shadow 0.22s ease',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                inset: 0,
+                borderRadius: 2,
+                background:
+                  'linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.06) 34%, rgba(255,255,255,0) 58%)',
+                pointerEvents: 'none',
+              },
               '&:hover': {
                 transform: 'translateY(-8px) scale(1.02)',
                 boxShadow: t.glowHover,
+                borderColor: `${t.border}88`,
+                background: t.cardBg,
               },
             }
           : {}),

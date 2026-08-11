@@ -85,8 +85,9 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             maxWidth,
             width: '100%',
             p: 4,
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(8px)',
+            background: 'linear-gradient(160deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.26) 100%)',
+            backdropFilter: 'blur(18px) saturate(150%)',
+            WebkitBackdropFilter: 'blur(18px) saturate(150%)',
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
           }}
         >

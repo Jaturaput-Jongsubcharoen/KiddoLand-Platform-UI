@@ -225,7 +225,16 @@ export const RecommendedBooksSection: React.FC<RecommendedBooksSectionProps> = (
             onChange={(e) => setSearchInput(e.target.value)}
             size="small"
             fullWidth
-            sx={{ flex: 1 }}
+            sx={{
+              flex: 1,
+              '& .MuiOutlinedInput-root': {
+                background:
+                  'linear-gradient(160deg, rgba(255,255,255,0.52) 0%, rgba(255,255,255,0.28) 100%)',
+                backdropFilter: 'blur(14px) saturate(145%)',
+                WebkitBackdropFilter: 'blur(14px) saturate(145%)',
+                borderRadius: 3,
+              },
+            }}
           />
           <Button type="submit" variant="contained" disabled={searchBusy || !searchInput.trim()}>
             Search
@@ -275,8 +284,10 @@ export const RecommendedBooksSection: React.FC<RecommendedBooksSectionProps> = (
                 height: 32,
                 color: 'primary.main',
                 border: '1px solid',
-                borderColor: 'divider',
-                bgcolor: 'background.paper',
+                borderColor: 'rgba(255,255,255,0.5)',
+                bgcolor: 'rgba(255,255,255,0.34)',
+                backdropFilter: 'blur(12px) saturate(145%)',
+                WebkitBackdropFilter: 'blur(12px) saturate(145%)',
                 '&:disabled': { opacity: 0.35 },
               }}
             >
@@ -376,8 +387,10 @@ export const RecommendedBooksSection: React.FC<RecommendedBooksSectionProps> = (
                 height: 32,
                 color: 'primary.main',
                 border: '1px solid',
-                borderColor: 'divider',
-                bgcolor: 'background.paper',
+                borderColor: 'rgba(255,255,255,0.5)',
+                bgcolor: 'rgba(255,255,255,0.34)',
+                backdropFilter: 'blur(12px) saturate(145%)',
+                WebkitBackdropFilter: 'blur(12px) saturate(145%)',
                 '&:disabled': { opacity: 0.35 },
               }}
             >

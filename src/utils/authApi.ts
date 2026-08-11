@@ -3,7 +3,7 @@ export type AuthMode = 'home' | 'institution';
 export interface AuthLoginResponse {
   access_token: string;
   expires_in: number;
-  role: string;
+  role: 'Parent' | 'Teacher' | 'Admin' | 'Librarian' | 'Guest';
   mode: AuthMode;
   plan: 'free' | 'paid';
   email?: string;
@@ -21,7 +21,7 @@ export interface UserProfile {
   first_name?: string;
   last_name?: string;
   full_name?: string;
-  role?: string;
+  role?: 'Parent' | 'Teacher' | 'Admin' | 'Librarian' | 'Guest';
   mode?: AuthMode;
   plan?: 'free' | 'paid';
 }
@@ -72,6 +72,23 @@ export const loginWithPassword = async (payload: AuthLoginRequest): Promise<Auth
   return response.json();
 };
 
+export const loginAsGuest = async (): Promise<AuthLoginResponse> => {
+  const apiBaseUrl = resolveApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/auth/guest`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({}));
+    const errorMessage = errorPayload?.detail || 'Unable to start anonymous demo mode.';
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+};
 export const registerWithPassword = async (
   payload: AuthRegisterRequest
 ): Promise<AuthLoginResponse> => {

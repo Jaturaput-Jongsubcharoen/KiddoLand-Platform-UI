@@ -231,7 +231,17 @@ const PlayLearningActivityPage: React.FC = () => {
             </Box>
           )}
 
-          <KiddoCard hoverEffect={false} sx={{ p: 4 }}>
+          <KiddoCard
+            hoverEffect={false}
+            sx={{
+              p: 4,
+              background:
+                'linear-gradient(160deg, rgba(255,255,255,0.46) 0%, rgba(255,255,255,0.2) 100%)',
+              backdropFilter: 'blur(20px) saturate(155%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(155%)',
+              border: '1px solid rgba(255,255,255,0.5)',
+            }}
+          >
             {/* Quit button — top-right, only during active quiz */}
             {phase === 'quiz' && (
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
@@ -256,7 +266,18 @@ const PlayLearningActivityPage: React.FC = () => {
               </Box>
             )}
             {phase === 'form' && (
-              <Stack spacing={2.5}>
+              <Stack
+                spacing={2.5}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 3,
+                    background:
+                      'linear-gradient(160deg, rgba(255,255,255,0.54) 0%, rgba(255,255,255,0.28) 100%)',
+                    backdropFilter: 'blur(14px) saturate(145%)',
+                    WebkitBackdropFilter: 'blur(14px) saturate(145%)',
+                  },
+                }}
+              >
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <Sparkles size={28} color="#F7931E" />
                   <Typography

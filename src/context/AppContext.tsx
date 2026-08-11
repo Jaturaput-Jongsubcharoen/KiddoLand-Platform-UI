@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
+import { loginAsGuest } from '../utils/authApi';
 
 export type AppMode = 'home' | 'institution' | null;
 
@@ -9,12 +10,13 @@ interface AppState {
   userName: string | null;
   accessToken: string | null;
   userRole: string | null;
-  userPlan: "free" | "paid";
+  userPlan: 'free' | 'paid';
   tokenExpiresAt: number | null;
 }
 
 interface AppContextType {
   appState: AppState;
+  sessionStatus: 'booting' | 'ready';
   setMode: (mode: AppMode) => void;
   login: (
     email: string,
@@ -22,7 +24,7 @@ interface AppContextType {
     userRole?: string,
     tokenExpiresAt?: number,
     userName?: string,
-    userPlan?: "free" | "paid"
+    userPlan?: 'free' | 'paid'
   ) => void;
   updateSession: (payload: {
     accessToken: string;
@@ -30,9 +32,9 @@ interface AppContextType {
     userRole?: string;
     userEmail?: string;
     userName?: string;
-    userPlan?: "free" | "paid";
+    userPlan?: 'free' | 'paid';
   }) => void;
-  setUserPlan: (plan: "free" | "paid") => void;
+  setUserPlan: (plan: 'free' | 'paid') => void;
   logout: () => void;
 }
 
@@ -41,8 +43,22 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const STORAGE_KEY = 'kiddoland_app_state';
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const guestBootstrapRequestId = useRef(0);
+  const [sessionStatus, setSessionStatus] = useState<'booting' | 'ready'>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) {
+      return 'booting';
+    }
+
+    try {
+      const parsed = JSON.parse(stored) as Partial<AppState>;
+      return parsed.accessToken ? 'ready' : 'booting';
+    } catch {
+      return 'booting';
+    }
+  });
+
   const [appState, setAppState] = useState<AppState>(() => {
-    // Load from localStorage on init
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
@@ -54,7 +70,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           userName: parsed.userName ?? null,
           accessToken: parsed.accessToken ?? null,
           userRole: parsed.userRole ?? null,
-          userPlan: parsed.userPlan === "paid" ? "paid" : "free",
+          userPlan: parsed.userPlan === 'paid' ? 'paid' : 'free',
           tokenExpiresAt: parsed.tokenExpiresAt ?? null,
         };
       } catch {
@@ -65,11 +81,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           userName: null,
           accessToken: null,
           userRole: null,
-          userPlan: "free",
+          userPlan: 'free',
           tokenExpiresAt: null,
         };
       }
     }
+
     return {
       selectedMode: null,
       isAuthenticated: false,
@@ -77,27 +94,74 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       userName: null,
       accessToken: null,
       userRole: null,
-      userPlan: "free",
+      userPlan: 'free',
       tokenExpiresAt: null,
     };
   });
 
-  // Persist to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
   }, [appState]);
+
+  useEffect(() => {
+    if (appState.accessToken) {
+      setSessionStatus('ready');
+      return;
+    }
+
+    if (sessionStatus !== 'booting') {
+      return;
+    }
+
+    const requestId = ++guestBootstrapRequestId.current;
+    let cancelled = false;
+
+    const bootstrapGuest = async () => {
+      try {
+        const response = await loginAsGuest();
+        if (cancelled || requestId !== guestBootstrapRequestId.current) {
+          return;
+        }
+
+        const tokenExpiresAt = Date.now() + response.expires_in * 1000;
+        setAppState(prev => ({
+          ...prev,
+          selectedMode: 'home',
+          isAuthenticated: true,
+          userEmail: response.email ?? null,
+          userName: response.full_name || response.name || 'Anonymous Guest',
+          accessToken: response.access_token,
+          userRole: response.role,
+          userPlan: response.plan,
+          tokenExpiresAt,
+        }));
+        localStorage.setItem('accessToken', response.access_token);
+        setSessionStatus('ready');
+      } catch {
+        if (cancelled || requestId !== guestBootstrapRequestId.current) {
+          return;
+        }
+        setSessionStatus('ready');
+      }
+    };
+
+    void bootstrapGuest();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appState.accessToken, sessionStatus]);
 
   const setMode = (mode: AppMode) => {
     setAppState(prev => ({
       ...prev,
       selectedMode: mode,
-      // Reset auth when changing mode
       isAuthenticated: false,
       userEmail: null,
       userName: null,
       accessToken: null,
       userRole: null,
-      userPlan: "free",
+      userPlan: 'free',
       tokenExpiresAt: null,
     }));
   };
@@ -108,8 +172,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     userRole?: string,
     tokenExpiresAt?: number,
     userName?: string,
-    userPlan: "free" | "paid" = "free",
+    userPlan: 'free' | 'paid' = 'free',
   ) => {
+    guestBootstrapRequestId.current += 1;
     setAppState(prev => ({
       ...prev,
       isAuthenticated: true,
@@ -120,6 +185,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       userPlan,
       tokenExpiresAt: tokenExpiresAt ?? null,
     }));
+    setSessionStatus('ready');
   };
 
   const updateSession = (payload: {
@@ -128,7 +194,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     userRole?: string;
     userEmail?: string;
     userName?: string;
+    userPlan?: 'free' | 'paid';
   }) => {
+    guestBootstrapRequestId.current += 1;
     setAppState(prev => ({
       ...prev,
       isAuthenticated: true,
@@ -139,13 +207,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       userEmail: payload.userEmail ?? prev.userEmail,
       userName: payload.userName ?? prev.userName,
     }));
+    setSessionStatus('ready');
   };
 
-  const setUserPlan = (plan: "free" | "paid") => {
+  const setUserPlan = (plan: 'free' | 'paid') => {
     setAppState((prev) => ({ ...prev, userPlan: plan }));
   };
 
   const logout = () => {
+    guestBootstrapRequestId.current += 1;
+    localStorage.removeItem('accessToken');
     setAppState({
       selectedMode: null,
       isAuthenticated: false,
@@ -153,9 +224,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       userName: null,
       accessToken: null,
       userRole: null,
-      userPlan: "free",
+      userPlan: 'free',
       tokenExpiresAt: null,
     });
+    setSessionStatus('booting');
   };
 
   useEffect(() => {
@@ -176,10 +248,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [appState.isAuthenticated, appState.tokenExpiresAt, logout]);
+  }, [appState.isAuthenticated, appState.tokenExpiresAt]);
 
   return (
-    <AppContext.Provider value={{ appState, setMode, login, updateSession, setUserPlan, logout }}>
+    <AppContext.Provider value={{ appState, sessionStatus, setMode, login, updateSession, setUserPlan, logout }}>
       {children}
     </AppContext.Provider>
   );

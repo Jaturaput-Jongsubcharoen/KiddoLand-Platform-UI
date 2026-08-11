@@ -168,16 +168,18 @@ export const ImageUploadButton: React.FC<ImageUploadButtonProps> = ({
                 borderRadius: "50%",
                 border: "1px solid",
                 borderColor: buttonColor,
-                backgroundColor: "rgba(255, 255, 255, 0.95)",
+                backgroundColor: "rgba(255, 255, 255, 0.6)",
+                backdropFilter: "blur(12px) saturate(145%)",
+                WebkitBackdropFilter: "blur(12px) saturate(145%)",
                 boxShadow: "none",
                 "&:hover": {
                   borderColor: buttonColor,
-                  backgroundColor: "rgba(255, 255, 255, 1)",
+                  backgroundColor: "rgba(255, 255, 255, 0.76)",
                 },
                 "&:disabled": {
                   borderColor: "text.disabled",
                   color: "text.disabled",
-                  backgroundColor: "rgba(255, 255, 255, 0.7)",
+                  backgroundColor: "rgba(255, 255, 255, 0.38)",
                 },
               }}
             >

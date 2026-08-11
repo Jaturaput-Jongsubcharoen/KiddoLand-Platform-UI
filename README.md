@@ -99,7 +99,7 @@ The backend currently validates ages at 1-10 for story-related API calls. The fr
 
 ### Authentication and Plans
 
-- Supports login and registration for Home and Institution modes
+- Supports guest-first demo access plus login and registration for Home and Institution modes
 - Validates and refreshes bearer sessions
 - Shows the current profile and mode in the app shell
 - Supports free and paid plan updates
@@ -122,15 +122,16 @@ The related backend call is the AI sample endpoint, which returns story text and
 
 ## User Management
 
-The platform uses bearer-token authentication with mode-aware login.
+The platform uses bearer-token authentication with mode-aware login, and the root route now bootstraps into an anonymous demo session when no saved session exists.
 
+- `POST /auth/guest` creates a temporary guest session with a unique user id
 - `POST /auth/login` signs in a user
 - `POST /auth/register` creates a user account
 - `GET /auth/validate` validates the current session
 - `POST /auth/refresh` refreshes the session token
 - `PATCH /auth/plan` updates the user plan between free and paid
 
-The frontend keeps the current user profile, mode, and plan in app state and uses those values to gate protected routes and download limits.
+The frontend keeps the current user profile, mode, and plan in app state and uses those values to gate protected routes and download limits. Anonymous demo users get a one-time welcome popup on first visit, and guest data is still isolated by `user_id` in the backend collections.
 
 ## Component Library
 
@@ -181,7 +182,8 @@ KiddoLand-Platform-UI/
 
 Routes are defined in `src/App.tsx` and include Home and Institution flows:
 
-- `/` - mode selection
+- `/` - anonymous-first bootstrap route
+- `/select-mode` - mode selection
 - `/auth/home` and `/auth/institution` - authentication screens
 - `/home`, `/home/create-story`, `/home/create-rhyme`, `/home/play-learning-activity`
 - `/story-history` and `/story-favorites`
@@ -193,7 +195,7 @@ The frontend uses `VITE_API_BASE_URL` when provided, otherwise it falls back to 
 
 The main API clients are:
 
-- `src/utils/authApi.ts` for login, register, validate, refresh, and plan updates
+- `src/utils/authApi.ts` for guest login, login, register, validate, refresh, and plan updates
 - `src/utils/aiApi.ts` for story generation, rhyme generation, favorites, history, downloads, video generation, and AI sample calls
 - `src/utils/recommendationsApi.ts` for book recommendations
 
@@ -227,9 +229,9 @@ VITE_API_BASE_URL=https://kiddoland-platform-api.onrender.com
 ## Quick Start
 
 1. Open the frontend in the browser.
-2. Select Home Mode or Institution Mode.
-3. Sign in or register.
-4. Create a story, rhyme, or quiz.
+2. Let the anonymous demo session load or select Home Mode / Institution Mode.
+3. Sign in or register if you want a persistent account.
+4. Create a story, rhyme, quiz, or video.
 5. Save favorites or review history if needed.
 
 ## Development Guide
@@ -238,7 +240,7 @@ If you are updating the UI or API integration, the most important files are:
 
 - `src/App.tsx` for route definitions
 - `src/utils/aiApi.ts` for story, rhyme, favorite, history, download, and video calls
-- `src/utils/authApi.ts` for login, register, validate, refresh, and plan changes
+- `src/utils/authApi.ts` for guest login, login, register, validate, refresh, and plan changes
 - `src/utils/recommendationsApi.ts` for book recommendations
 - `src/types/storyOptions.ts` for age bands and story preferences
 - `src/pages/CreateStoryUnifiedPage.tsx` for the main story workflow

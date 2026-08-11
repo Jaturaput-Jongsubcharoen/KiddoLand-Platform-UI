@@ -45,7 +45,8 @@ export const kiddoTheme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Nunito", "Fredoka", "Roboto", "Arial", sans-serif',
+    fontFamily:
+      '"SF Pro Display", "SF Pro Text", "Nunito", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
     h1: {
       fontFamily: '"Fredoka", "Nunito", sans-serif',
       fontWeight: 700,
@@ -99,12 +100,12 @@ export const kiddoTheme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          backgroundColor: '#F8FAFC',
+          backgroundColor: '#EAF1FB',
           backgroundImage:
-            'radial-gradient(circle at 10% 20%, rgba(79, 124, 242, 0.16) 0, transparent 38%),' +
-            'radial-gradient(circle at 85% 15%, rgba(249, 115, 22, 0.14) 0, transparent 42%),' +
-            'radial-gradient(circle at 75% 85%, rgba(20, 184, 166, 0.12) 0, transparent 40%),' +
-            'linear-gradient(135deg, #F9FAFB 0%, #EEF2FF 100%)',
+            'radial-gradient(circle at 12% 14%, rgba(120, 166, 255, 0.28) 0, transparent 36%),' +
+            'radial-gradient(circle at 86% 10%, rgba(126, 243, 219, 0.22) 0, transparent 34%),' +
+            'radial-gradient(circle at 80% 80%, rgba(249, 191, 147, 0.20) 0, transparent 40%),' +
+            'linear-gradient(150deg, #F7FAFF 0%, #ECF4FF 45%, #EEF8F7 100%)',
           backgroundAttachment: 'fixed',
         },
         a: {
@@ -120,9 +121,13 @@ export const kiddoTheme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          background: 'linear-gradient(120deg, #1D4ED8 0%, #14B8A6 100%)',
+          background:
+            'linear-gradient(125deg, rgba(28, 87, 201, 0.74) 0%, rgba(32, 182, 170, 0.68) 100%)',
+          backdropFilter: 'blur(14px) saturate(150%)',
+          WebkitBackdropFilter: 'blur(14px) saturate(150%)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.35)',
           color: '#FFFFFF',
-          boxShadow: '0 6px 20px rgba(15, 23, 42, 0.12)',
+          boxShadow: '0 14px 36px rgba(15, 23, 42, 0.18)',
         },
       },
     },
@@ -160,8 +165,23 @@ export const kiddoTheme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 24,
-          boxShadow: '0 6px 18px rgba(15, 23, 42, 0.08)',
+          background: 'linear-gradient(160deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.2) 100%)',
+          backdropFilter: 'blur(20px) saturate(155%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(155%)',
+          border: '1px solid rgba(255,255,255,0.5)',
+          boxShadow: '0 10px 28px rgba(15, 23, 42, 0.14)',
           transition: 'all 0.25s ease',
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          background: 'linear-gradient(160deg, rgba(255,255,255,0.48) 0%, rgba(241,247,255,0.3) 100%)',
+          border: '1px solid rgba(255,255,255,0.54)',
+          backdropFilter: 'blur(24px) saturate(165%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(165%)',
+          boxShadow: '0 22px 48px rgba(15, 23, 42, 0.22)',
         },
       },
     },

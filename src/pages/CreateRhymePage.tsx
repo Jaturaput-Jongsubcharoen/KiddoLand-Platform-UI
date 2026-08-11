@@ -1013,7 +1013,7 @@ const CreateRhymePage: React.FC = () => {
                     right: -8,
                     bottom: -8,
                     background:
-                      "linear-gradient(135deg, rgba(255,107,53,0.1), rgba(78,205,196,0.1))",
+                      "linear-gradient(135deg, rgba(255,107,53,0.15), rgba(78,205,196,0.13))",
                     borderRadius: 2,
                     zIndex: 0,
                   },
@@ -1024,9 +1024,12 @@ const CreateRhymePage: React.FC = () => {
                     position: "relative",
                     zIndex: 1,
                     border: "1px solid",
-                    borderColor: "rgba(0, 0, 0, 0.23)",
+                    borderColor: "rgba(255,255,255,0.62)",
                     borderRadius: 2,
-                    backgroundColor: "#fff",
+                    background:
+                      "linear-gradient(165deg, rgba(255,255,255,0.48) 0%, rgba(247,251,255,0.24) 100%)",
+                    backdropFilter: "blur(18px) saturate(150%)",
+                    WebkitBackdropFilter: "blur(18px) saturate(150%)",
                     overflow: "hidden",
                     "&:focus-within": {
                       borderColor: "primary.main",
@@ -1039,7 +1042,7 @@ const CreateRhymePage: React.FC = () => {
                         px: 1.5,
                         pt: 1.5,
                         pb: 1,
-                        backgroundColor: "#fff",
+                        backgroundColor: "rgba(255,255,255,0.16)",
                       }}
                     >
                       {imageError && (
@@ -1097,10 +1100,10 @@ const CreateRhymePage: React.FC = () => {
                                     width: 28,
                                     height: 28,
                                     p: 0,
-                                    bgcolor: "rgba(255,255,255,0.95)",
+                                    bgcolor: "rgba(255,255,255,0.64)",
                                     color: "text.primary",
                                     boxShadow: "0 1px 2px rgba(0,0,0,0.12)",
-                                    "&:hover": { bgcolor: "background.paper" },
+                                    "&:hover": { bgcolor: "rgba(255,255,255,0.78)" },
                                   }}
                                 >
                                   <Pencil size={14} strokeWidth={2.25} />
@@ -1115,10 +1118,10 @@ const CreateRhymePage: React.FC = () => {
                                     width: 28,
                                     height: 28,
                                     p: 0,
-                                    bgcolor: "rgba(255,255,255,0.95)",
+                                    bgcolor: "rgba(255,255,255,0.64)",
                                     color: "text.primary",
                                     boxShadow: "0 1px 2px rgba(0,0,0,0.12)",
-                                    "&:hover": { bgcolor: "background.paper" },
+                                    "&:hover": { bgcolor: "rgba(255,255,255,0.78)" },
                                   }}
                                 >
                                   <X size={14} strokeWidth={2.25} />
@@ -1138,7 +1141,7 @@ const CreateRhymePage: React.FC = () => {
                     </Box>
                   )}
 
-                  <Box sx={{ position: "relative", bgcolor: "#fff" }}>
+                  <Box sx={{ position: "relative", bgcolor: "rgba(255,255,255,0.12)" }}>
                     <TextField
                       // label="Rhyme topic (optional)"
                       value={topic}
@@ -1191,19 +1194,19 @@ const CreateRhymePage: React.FC = () => {
                               borderColor: micColor,
                               backgroundColor: isRecording
                                 ? "rgba(239, 68, 68, 0.12)"
-                                : "rgba(255, 255, 255, 0.95)",
+                                : "rgba(255, 255, 255, 0.68)",
                               boxShadow: "none",
                               animation: isRecording ? `${micPulse} 1.8s infinite` : "none",
                               "&:hover": {
                                 borderColor: micColor,
                                 backgroundColor: isRecording
                                   ? "rgba(239, 68, 68, 0.18)"
-                                  : "rgba(255, 255, 255, 1)",
+                                  : "rgba(255, 255, 255, 0.84)",
                               },
                               "&:disabled": {
                                 borderColor: "text.disabled",
                                 color: "text.disabled",
-                                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                                backgroundColor: "rgba(255, 255, 255, 0.55)",
                               },
                             }}
                           >
