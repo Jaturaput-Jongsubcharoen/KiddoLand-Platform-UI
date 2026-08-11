@@ -48,24 +48,24 @@ export const kiddoTheme = createTheme({
     fontFamily:
       '"SF Pro Display", "SF Pro Text", "Nunito", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
     h1: {
-      fontFamily: '"Fredoka", "Nunito", sans-serif',
+      fontFamily: '"Nunito", sans-serif',
       fontWeight: 700,
       fontSize: '2.6rem',
       letterSpacing: '-0.02em',
     },
     h2: {
-      fontFamily: '"Fredoka", "Nunito", sans-serif',
+      fontFamily: '"Nunito", sans-serif',
       fontWeight: 700,
       fontSize: '2.1rem',
       letterSpacing: '-0.02em',
     },
     h3: {
-      fontFamily: '"Fredoka", "Nunito", sans-serif',
+      fontFamily: '"Nunito", sans-serif',
       fontWeight: 600,
       fontSize: '1.8rem',
     },
     h4: {
-      fontFamily: '"Fredoka", "Nunito", sans-serif',
+      fontFamily: '"Nunito", sans-serif',
       fontWeight: 600,
       fontSize: '1.5rem',
     },

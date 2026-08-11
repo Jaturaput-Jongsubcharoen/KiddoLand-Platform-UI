@@ -150,7 +150,7 @@ export const ActionTile: React.FC<ActionTileProps> = ({
               component="div"
               sx={{
                 fontWeight: playful ? 800 : 700,
-                fontFamily: playful ? '"Fredoka", "Nunito", sans-serif' : undefined,
+                fontFamily: playful ? '"Nunito", sans-serif' : undefined,
                 letterSpacing: playful ? '-0.02em' : undefined,
                 color: playful && t ? t.titleColor : 'text.primary',
                 fontSize: playful ? { xs: '1.2rem', sm: '1.35rem' } : undefined,

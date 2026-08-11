@@ -79,7 +79,7 @@ export const HomeDashboardPage: React.FC = () => {
               sx={{
                 fontWeight: 800,
                 mb: 0.75,
-                fontFamily: '"Fredoka", "Nunito", sans-serif',
+                fontFamily: '"Nunito", sans-serif',
                 background: 'linear-gradient(135deg, #1D4ED8 0%, #7C3AED 45%, #F97316 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',

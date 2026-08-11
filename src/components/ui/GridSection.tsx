@@ -34,7 +34,7 @@ export const GridSection: React.FC<GridSectionProps> = ({
         sx={{
           mb: description ? 0.75 : 2,
           fontWeight: 800,
-          fontFamily: '"Fredoka", "Nunito", sans-serif',
+          fontFamily: '"Nunito", sans-serif',
           letterSpacing: '-0.02em',
           ...titleSx,
         }}
