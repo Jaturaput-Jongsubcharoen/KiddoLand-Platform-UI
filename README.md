@@ -1,6 +1,6 @@
 # KiddoLand Platform - Frontend
 
-Screenshot asset pending at `public/images/kiddoland-platform-home.png`.
+[![KiddoLand Platform Screenshot](public/images/kiddoland-platform-home.png)](https://kiddoland-platform-ui.onrender.com/)
 
 A privacy-first AI storytelling platform for children.
 
@@ -51,7 +51,7 @@ If you run the frontend locally, set `VITE_API_BASE_URL` to the Render backend U
 
 ## Age Rules
 
-The UI offers age bands from 1-2 through 11-12 years for story, rhyme, and quiz setup.
+The UI offers age bands from 3-10 years for story, rhyme, and quiz setup.
 
 The backend currently validates ages at 1-10 for story-related API calls. The frontend therefore normalizes the oldest age band down to 10 before the request reaches the API. That is the rule the code actually uses today.
 
